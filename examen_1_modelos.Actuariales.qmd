@@ -1,0 +1,117 @@
+---
+title: "Modelos Actuariales"
+subtitle: "Actuarial 3"
+lang: es
+author: "Marcelino Sánchez"
+date: today
+format:
+  html:
+    page-layout: full
+    embed-resources: true
+editor_options: 
+  chunk_output_type: console
+---
+
+# Nota Técnica
+
+## 1. Descripción de la cobertura del seguro
+
+### a. Tipo de seguro
+
+(Temporal, dotal, ...)
+
+### b. Temporalidad
+
+(Vigencia del seguro y del pago de primas)
+
+### c. Población asegurada
+
+(Edad de los asegurados cubiertos)
+
+## 2. Hipótesis demográficas y financieras
+
+### a. Hipótesis demográ fica
+
+### b. Hipótesis sobre costos
+
+### c. Hipótesis sobre tasa de interés
+
+## 3. Procedimientos técnicos
+
+### a. Prima neta
+
+(Fórmula para el cálculo y valor obtenido)
+
+### b. Prima recargada
+
+(Fórmula para el cálculo y valor obtenido)
+
+### c. Valores póliza asociados a la prima neta
+
+(Fórmula para el cálculo y valores obtenidos para toda la vigencia de la póliza)
+
+### d. Valores póliza asociados a la prima recargada
+
+(Fórmula para el cálculo y valores obtenidos para toda la vigencia de la póliza)
+
+### e. Valores garantizados
+
+(Fórmula para el cálculo y valores obtenidos mientras haya pago de primas)
+
+# Profit testing
+
+## 1. Análisis determinista
+
+### a. Hipótesis demográ ficas y financieras
+
+(Elige las variables a analizar, mínimo 2, y los supuestos realistas que vas a utilizar)
+
+### b. Valor Presente Neto (VPN)
+
+(Fórmula para el cálculo y valor obtenido)
+
+### c. Margen de Utilidad (MU)
+
+(Fórmula para el cálculo y valor obtenido)
+
+## 2. Análisis estocástico
+
+### a. Análisis stress-testing para el VPN y MU
+
+(Escoge 2 variables y realiza el stress testing)
+
+### b. Análisis por escenarios para el VPN y MU
+
+(Plantea 5 escenarios para realizar el análisis)
+
+### c. Análisis por simulación
+
+#### c.1. Hipótesis para la simulación de las variables a analizar
+
+#### c.2. Histograma de 1000 realizaciones de VPN y MU
+
+#### c.3. Promedio y desviación estándar de las 1000 realizaciones de VPN y MU
+
+# Para una cartera de 100 asegurados: Fondo Total
+
+## 1. Asset-share
+
+(Fórmula para el cálculo y valores obtenidos para toda la vigencia de la póliza)
+
+## 2. Estimación del Fondo Total mediante el Asset-share
+
+(Fórmula para el cálculo y valores obtenidos para toda la vigencia de la póliza)
+
+# Análisis de Rentabilidad
+
+## 1. Utilidades
+
+(Fórmula para el cálculo y valores obtenidos para toda la vigencia de la póliza)
+
+## 2. VPN
+
+(Fórmula para el cálculo y valor obtenido)
+
+## 3. MU
+
+(Fórmula para el cálculo y valor obtenido)
