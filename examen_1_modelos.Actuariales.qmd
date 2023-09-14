@@ -115,3 +115,33 @@ editor_options:
 ## 3. MU
 
 (Fórmula para el cálculo y valor obtenido)
+
+
+```{r}
+# Supuestos principales
+# 191654
+# edad del asegurado
+x <- 16+30
+#vigencia del seguro
+n <- 19
+#tasa de interes efectiva anual
+itasaBase <- .05
+#numero de primas anuales
+mPrimas <- 4
+# Sumas aseguradas
+saMuerte <- 2000000
+saSupervivencia <- 1000000
+#
+
+
+```
+
+```{r}
+# Leeremos la tabla de mortalidad
+
+# Cargamos la libreria
+library(readxl)
+
+# Leemos la tabla de mortalidad
+tablaMortalidad <- read_excel("Tabla_mortalidad.xlsx")
+```
