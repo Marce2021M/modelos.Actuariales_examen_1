@@ -12,27 +12,105 @@ editor_options:
   chunk_output_type: console
 ---
 
+
+```{r, echo=FALSE, results=FALSE, warning=FALSE, message=FALSE}
+# Cargamos la libreria
+library(readxl)
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+
+# Supuestos principales
+# 191654
+# edad del asegurado
+xEdad <- 16+30
+#vigencia del seguro
+n <- 19
+#tasa de interes efectiva anual
+itasaBase <- .05
+#numero de primas anuales
+mPrimas <- 4
+# Sumas aseguradas
+saMuerte <- 2000000
+saSupervivencia <- 1000000
+
+# Leeremos la tabla de mortalidad
+
+# Leemos la tabla de mortalidad
+tablaMortalidad <- read_excel("Tabla_mortalidad.xlsx")
+
+qTablaMortalidad <- data.frame(px = numeric(length(tablaMortalidad$lx)-xEdad), kSuperv = numeric(length(tablaMortalidad$lx)-xEdad))
+
+
+# Creamos la columna de supervivencia
+
+for(i in (xEdad+1):length(tablaMortalidad$lx)){
+  qTablaMortalidad$px[i-xEdad] <- tablaMortalidad$lx[i]/tablaMortalidad$lx[xEdad+1] 
+  qTablaMortalidad$kSuperv[i-xEdad] <- i-xEdad
+}
+
+# Hacemos función de gastos extras
+
+gastosExtrasPrimas <- function(anio, tipoGasto, primaEmision){
+  if(anio == 0){
+    return(1000 + primaEmision*.4)
+  }else if(anio %in% c(1,2)){
+    return(500+.2*primaEmision)
+  }else {
+    return(100 + .05*primaEmision)
+  }
+}
+
+gastosExtrasLiquidacion <- function(anio, tipoGasto, primaEmision){
+  if(anio == 0 and tipoGasto == "prima"){
+    return(1000 + primaEmision*.4)
+  }else if(anio %in% c(1,2) and tipoGasto == "prima"){
+    return(500+.2*primaEmision)
+  }else if(anio >=3 and tipoGasto == "prima"){
+    return(100 + .05*primaEmision)
+  }else if(tipoGasto == "liquidacion"){
+    return(3000, )
+  }
+}
+
+
+```
+
 # Nota Técnica
 
 ## 1. Descripción de la cobertura del seguro
 
 ### a. Tipo de seguro
 
-(Temporal, dotal, ...)
+Es un seguro dotal mixto.
 
 ### b. Temporalidad
 
-(Vigencia del seguro y del pago de primas)
+El seguro tiene una vigencia de `r n` años con primas niveladas por 4 años anticipadamente.
 
 ### c. Población asegurada
 
-(Edad de los asegurados cubiertos)
+La edad de los asegurados es de `r xEdad` años.
 
 ## 2. Hipótesis demográficas y financieras
 
-### a. Hipótesis demográ fica
+### a. Hipótesis demográfica
+
+Utilizaremos la tabla proporcionada por la aseguradora. La cual para una persona de `r xEdad` años se ve de la siguiente manera:
+
+```{r,  echo=FALSE}
+              
+# Graficamos la tabla
+
+ggplot(qTablaMortalidad, aes(x = kSuperv, y = px)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Tabla de mortalidad", x = "Supervivencia", y = "px") 
+```
 
 ### b. Hipótesis sobre costos
+
+
 
 ### c. Hipótesis sobre tasa de interés
 
@@ -115,33 +193,3 @@ editor_options:
 ## 3. MU
 
 (Fórmula para el cálculo y valor obtenido)
-
-
-```{r}
-# Supuestos principales
-# 191654
-# edad del asegurado
-x <- 16+30
-#vigencia del seguro
-n <- 19
-#tasa de interes efectiva anual
-itasaBase <- .05
-#numero de primas anuales
-mPrimas <- 4
-# Sumas aseguradas
-saMuerte <- 2000000
-saSupervivencia <- 1000000
-#
-
-
-```
-
-```{r}
-# Leeremos la tabla de mortalidad
-
-# Cargamos la libreria
-library(readxl)
-
-# Leemos la tabla de mortalidad
-tablaMortalidad <- read_excel("Tabla_mortalidad.xlsx")
-```
