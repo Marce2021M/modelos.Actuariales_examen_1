@@ -51,7 +51,7 @@ for(i in (xEdad+1):length(tablaMortalidad$lx)){
 
 # Hacemos función de gastos extras
 
-gastosExtrasPrimas <- function(anio, tipoGasto, primaEmision){
+gastosExtrasPrimas <- function(anio){
   if(anio == 0){
     return(1000 + primaEmision*.4)
   }else if(anio %in% c(1,2)){
@@ -61,17 +61,28 @@ gastosExtrasPrimas <- function(anio, tipoGasto, primaEmision){
   }
 }
 
-gastosExtrasLiquidacion <- function(anio, tipoGasto, primaEmision){
-  if(anio == 0 and tipoGasto == "prima"){
-    return(1000 + primaEmision*.4)
-  }else if(anio %in% c(1,2) and tipoGasto == "prima"){
-    return(500+.2*primaEmision)
-  }else if(anio >=3 and tipoGasto == "prima"){
-    return(100 + .05*primaEmision)
-  }else if(tipoGasto == "liquidacion"){
-    return(3000, )
+gastosExtrasLiquidacion <- function(salida){
+  if(salida == "muerte"){
+    return(3000 + saMuerte*.003)
+  }else{
+    return(1000+saSupervivencia*.001)
+}}
+
+# Hacemos función de valores garantizados
+
+valoresGarantizados <- function(valorPoliza, anio){
+  if(anio %in% c(1,2)){
+    return(valorPoliza*.8)
+  }else{
+    return(valorPoliza*.9)
   }
 }
+
+nCarteraAsegurados <- 100
+
+# Extraemos datos de la hoja de excel valores observados
+
+
 
 
 ```
