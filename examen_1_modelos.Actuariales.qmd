@@ -8,6 +8,11 @@ format:
   html:
     page-layout: full
     embed-resources: true
+  pdf: 
+     include-in-header:  
+        - text: |
+            \usepackage{actuarialsymbol}
+     embed-resources: true
 editor_options: 
   chunk_output_type: console
 ---
@@ -40,6 +45,9 @@ nCarteraAsegurados <- 100
 
 # Leemos la tabla de mortalidad
 tablaMortalidad <- read_excel("Tabla_mortalidad.xlsx")
+
+tablaMortalidad <- tablaMortalidad |> 
+  mutate(dx= c(tablaMortalidad$lx[1:(length(tablaMortalidad$lx)-1)]-tablaMortalidad$lx[2:length(tablaMortalidad$lx)],NA))
 
 qTablaMortalidad <- data.frame(px = numeric(length(tablaMortalidad$lx)-xEdad), kSuperv = numeric(length(tablaMortalidad$lx)-xEdad))
 
@@ -130,41 +138,164 @@ ggplot(qTablaMortalidad, aes(x = kSuperv, y = px)) +
 
 ### b. Hipótesis sobre costos
 
-Dados los valores observados por la aseguradora tendremos los siguientes gastos representados por la siguiente gráfica.
+Dados los valores observados por la aseguradora tendremos los siguientes gastos.
 
-```{r, echo=FALSE}
-
-#ggplot(valoresObservados_costosPromedios)) +
-#  geom_line() +
-#  geom_point() +
-#  labs(title = "Tabla de mortalidad", x = "Supervivencia", y = "px") 
-```
+Los gastos asociados a la prima son \$1000 más 40% de la prima en la emisión, \$500 más 20% de la prima los siguientes dos años y \$100 más 5% de la prima para el resto de los años donde se paga prima. Los gastos asociados a la liquidación son \$3,000 mas 0.3% de la suma asegurada en caso de muerte y \$1,000 mas 0.1% de la suma asegurada en caso de supervivencia.
 
 ### c. Hipótesis sobre tasa de interés
 
-La tasa base será del `r itasa*100`%, porque actualmente existe la expectativa de disminución en la tasa de interés. Esto debido a que la inflación está disminuyendo, y la política de BM es bajar las tasas de interés una vez controlada la inflación. Además, como el seguro tiene una vigencia de `r n` años esperamos que disminuya aún más manteniendose en promedio del `r itasa*100`%.
+La tasa base será del `r itasaBase*100`%, porque actualmente existe la expectativa de disminución en la tasa de interés. Esto debido a que la inflación está disminuyendo, y la política de BM es bajar las tasas de interés una vez controlada la inflación. Además, como el seguro tiene una vigencia de `r n` años esperamos que disminuya aún más manteniendose en promedio del `r itasaBase*100`%.
 
 ## 3. Procedimientos técnicos
+
+```{r echo=FALSE, results=FALSE}
+# Funciones útiles para los siguientes cálculos
+
+# Definición de más variables globales
+
+v <- 1/(1+itasaBase)
+
+# Cálculo de temporales
+
+temporal <- function(edad, vigencia){
+  resultado <- 0
+  for (k in seq(0, vigencia-1, 1)){
+    resultado <- resultado + v^(k+1)*(tablaMortalidad$dx[edad+k+1]/tablaMortalidad$lx[edad+1])
+  }
+  return(resultado)
+}
+
+anualidad <- function(edad, vigencia){
+  resultado <- 0
+  for (k in seq(0, vigencia-1, 1)){
+    resultado <- resultado + v^(k)*(tablaMortalidad$lx[edad+k+1]/tablaMortalidad$lx[edad+1])
+  }
+  return(resultado)
+}
+
+dotal <- function(edad, vigencia){
+  resultado <- v^(n)*tablaMortalidad$lx[xEdad+vigencia+1]/tablaMortalidad$lx[xEdad+1]
+  return(resultado)
+}
+
+valorPoliza <- function(){
+
+  
+}
+
+valorPolizaRecargado <- function(kTemp, primaRecargada){
+  resultado <- 0
+  if(kTemp == 1){
+    resultado <- (dotal(xEdad,kTemp)^(-1))*(-1000+.6*primaRecargada-(3000+1.003*saMuerte)*temporal(xEdad, kTemp))
+  } 
+  else if(kTemp %in% c(2,3)){
+    resultado <- (dotal(xEdad,kTemp)^(-1))*(-1000+.6*primaRecargada+(-500+.8*primaRecargada)*(anualidad(xEdad, kTemp)-1)-(3000+1.003*saMuerte)*temporal(xEdad, kTemp))
+  }
+  else if(kTemp >=4 && kTemp<=19){
+    resultado <- (dotal(xEdad,kTemp)^(-1))*(-1000+.6*primaRecargada+(-500+.8*primaRecargada)*(anualidad(xEdad, 3)-1)+(-100+.95*primaRecargada)*anualidad(xEdad+3, kTemp-3)*dotal(xEdad, 3)-(3000+1.003*saMuerte)*temporal(xEdad, kTemp))
+  }
+  else{
+    resultado <- 0
+  }
+  return (resultado)
+}
+```
+
 
 ### a. Prima neta
 
 (Fórmula para el cálculo y valor obtenido)
 
+La prima neta está dada por la siguiente fórmula:
+
+$$P=\frac{(SA_M)A_{`r xEdad`:\angl{`r n`}} +(SA_S) \Ex[`r n`]{`r xEdad`} }{\ddot{a}_{`r xEdad`:\angl{`r mPrimas`}}}$$
+
+$$=\frac{(SA_M)(\sum_{k=0}^{`r n-1`}v^{k+1}\frac{\dx{`r xEdad`+k}}{\lx{`r xEdad`}})+(SA_S) v^{`r n`}\frac{\lx{`r xEdad + n`}}{\lx{`r xEdad`}}}{\sum_{k=0}^{`r n-1`}v^{k}\frac{\lx{`r xEdad`+k}}{\lx{`r xEdad`}}}$$
+
+```{r echo=FALSE, results=FALSE}
+# Cálculo de la prima neta
+
+primaNeta <- (saMuerte*temporal(xEdad, n) + saSupervivencia*dotal(xEdad,n))/anualidad(xEdad, mPrimas)
+
+```
+
+Con lo cual el valor de la prima neta es de \$`r primaNeta`.
+
 ### b. Prima recargada
 
 (Fórmula para el cálculo y valor obtenido)
+
+El valor de la prima recargada proviene de despejar G de la siguiente ecuación:
+
+$$(3000+(1.003)(SA_M))A_{\nthtop*{1}{`r xEdad`}:\angl{`r n`}} + (1000 + (1.001)(SA_S))\Ex[`r n`]{`r xEdad`}= $$
+
+$$-1000+.6G+(-500+.8G)(\ax**{`r xEdad`:\angl{3}}-1)+(-100+.95G)\ax**{`r xEdad+3`:\angl{`r mPrimas-3`}}(\Ex[3]{`r n-3`})$$
+
+
+
+Es decir, tenemos que:
+
+$$G= \frac{(3000+(1.003)(SA_M))A_{\nthtop*{1}{`r xEdad`}:\angl{`r n`}} + (1000 + (1.001)(SA_S))\Ex[`r n`]{`r xEdad`}+1000+500((\ax**{`r xEdad`:\angl{3}}-1))+100(\ax**{`r xEdad+3`:\angl{`r mPrimas-3`}})(\Ex[3]{`r xEdad`})}{.6+.8(\ax**{`r xEdad`:\angl{3}}-1)+.95\ax**{`r xEdad+3`:\angl{`r mPrimas-3`}}(\Ex[3]{`r xEdad`})}$$
+
+
+
+```{r echo=FALSE, results=FALSE}
+# Cálculo de la prima recargada
+
+primaRecargada <- ((3000+1.003*saMuerte)*temporal(xEdad, n) + (1000+1.001*saSupervivencia)*dotal(xEdad,n) + 1000 + 500*(anualidad(xEdad, 3)-1) + 100*anualidad(xEdad+3, mPrimas-3)*dotal(xEdad, 3))/(.6+.8*(anualidad(xEdad, 3)-1)+.95*anualidad(xEdad+3, mPrimas-3)*dotal(xEdad, 3))
+```
+
+
+Con lo cual el valor de la prima recargada es de \$`r primaRecargada`.
 
 ### c. Valores póliza asociados a la prima neta
 
 (Fórmula para el cálculo y valores obtenidos para toda la vigencia de la póliza)
 
+Para $k=0,...,4$
+$$\Vx[k]{`r xEdad`: \angl{`r n`}}= \frac{1}{\Ex[k]{`r xEdad`}}(P\ax**{`r xEdad`:\angl{k}}-(SA_M)A_{\nthtop*{1}{`r xEdad`}:\angl{k}})$$
+
+Para $k=5,...,`r n`$
+$$\Vx[k]{`r xEdad`: \angl{`r n`}}= \frac{1}{\Ex[k]{`r xEdad`}}(P\ax**{`r xEdad`:\angl{4}}-(SA_M)A_{\nthtop*{1}{`r xEdad`}:\angl{k}})$$
+
+```{r echo=FALSE, results=FALSE}
+# Cálculo de valores póliza asociados
+```
+
 ### d. Valores póliza asociados a la prima recargada
 
 (Fórmula para el cálculo y valores obtenidos para toda la vigencia de la póliza)
 
+Para $k=1$
+
+$$\Vx[k]{`r xEdad`: \angl{`r n`}}= \frac{1}{\Ex[k]{`r xEdad`}}(-1000+.6G-(3000+1.003SA_M)A_{\nthtop*{1}{`r xEdad`}:\angl{k}})$$
+
+Para $k=2,3$
+
+$$\Vx[k]{`r xEdad`: \angl{`r n`}}= \frac{1}{\Ex[k]{`r xEdad`}}(-1000+.6G+(-500+.8G)(\ax**{`r xEdad`:\angl{k}}-1)-(3000+1.003SA_M)A_{\nthtop*{1}{`r xEdad`}:\angl{k}})$$
+
+
+Para $k=4,...,`r n`$
+
+$$\Vx[k]{`r xEdad`: \angl{`r n`}}= \frac{1}{\Ex[k]{`r xEdad`}}(-1000+.6G+(-500+.8G)(\ax**{`r xEdad`:\angl{3}}-1)+(-100+.95G)(\ax**{`r xEdad+3`:\angl{`r mPrimas-3`}})(\Ex[3]{`r xEdad`})$$
+$$-(3000+1.003SA_M)A_{\nthtop*{1}{`r xEdad`}:\angl{k}})$$
+
+
+```{r echo=FALSE, results=FALSE}
+
+```
+
 ### e. Valores garantizados
 
 (Fórmula para el cálculo y valores obtenidos mientras haya pago de primas)
+
+Calculado retrospectivamente obtenemos la siguiente fórmula:
+
+
+
+```{r echo=FALSE, results=FALSE}
+
+```
 
 # Profit testing
 
