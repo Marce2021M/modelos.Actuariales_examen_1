@@ -89,8 +89,10 @@ gastosExtrasLiquidacion <- function(salida){
 valoresGarantizados <- function(valorPoliza, anio){
   if(anio %in% c(1,2)){
     return(valorPoliza*.8)
-  }else{
+  }else if (anio == 3){
     return(valorPoliza*.9)
+  } else {
+    return(0)
   }
 }
 
@@ -178,9 +180,16 @@ dotal <- function(edad, vigencia){
   return(resultado)
 }
 
-valorPoliza <- function(){
-
-  
+valorPoliza <- function(kTemp, prima){
+  resultado <- 0
+  if(kTemp %in% c(1,2,3,4)){
+    resultado <- (dotal(xEdad,kTemp)^(-1))*(prima*anualidad(xEdad,kTemp)-saMuerte*temporal(xEdad, kTemp))
+  } 
+  else if(kTemp >=5 && kTemp<=n){
+    resultado <- (dotal(xEdad,kTemp)^(-1))*(prima*anualidad(xEdad,4)-saMuerte*temporal(xEdad, kTemp))}
+  else{
+    resultado <- 0
+  }
 }
 
 valorPolizaRecargado <- function(kTemp, primaRecargada){
@@ -191,14 +200,16 @@ valorPolizaRecargado <- function(kTemp, primaRecargada){
   else if(kTemp %in% c(2,3)){
     resultado <- (dotal(xEdad,kTemp)^(-1))*(-1000+.6*primaRecargada+(-500+.8*primaRecargada)*(anualidad(xEdad, kTemp)-1)-(3000+1.003*saMuerte)*temporal(xEdad, kTemp))
   }
-  else if(kTemp >=4 && kTemp<=19){
-    resultado <- (dotal(xEdad,kTemp)^(-1))*(-1000+.6*primaRecargada+(-500+.8*primaRecargada)*(anualidad(xEdad, 3)-1)+(-100+.95*primaRecargada)*anualidad(xEdad+3, kTemp-3)*dotal(xEdad, 3)-(3000+1.003*saMuerte)*temporal(xEdad, kTemp))
+  else if(kTemp >=4 && kTemp<=n){
+    resultado <- (dotal(xEdad,kTemp)^(-1))*(-1000+.6*primaRecargada+(-500+.8*primaRecargada)*(anualidad(xEdad, 3)-1)+(-100+.95*primaRecargada)*anualidad(xEdad+3, mPrimas-3)*dotal(xEdad, 3)-(3000+1.003*saMuerte)*temporal(xEdad, kTemp))
   }
   else{
     resultado <- 0
   }
   return (resultado)
 }
+
+
 ```
 
 
@@ -258,8 +269,34 @@ $$\Vx[k]{`r xEdad`: \angl{`r n`}}= \frac{1}{\Ex[k]{`r xEdad`}}(P\ax**{`r xEdad`:
 Para $k=5,...,`r n`$
 $$\Vx[k]{`r xEdad`: \angl{`r n`}}= \frac{1}{\Ex[k]{`r xEdad`}}(P\ax**{`r xEdad`:\angl{4}}-(SA_M)A_{\nthtop*{1}{`r xEdad`}:\angl{k}})$$
 
-```{r echo=FALSE, results=FALSE}
+
+
+```{r echo=FALSE}
 # Cálculo de valores póliza asociados
+
+# Creamos la tabla de valores póliza asociados a la prima neta
+
+tablaValoresPolizaAsociados <- data.frame(k = numeric(n+1), Vx = numeric(n+1))
+
+# Llenamos la tabla
+
+for (k in seq(0, n, 1)){
+  tablaValoresPolizaAsociados$Vx[k+1] <- valorPoliza(k, primaNeta)
+  tablaValoresPolizaAsociados$k[k+1] <- k
+}
+
+#Mostramos la tabla
+
+tablaValoresPolizaAsociados 
+
+
+# Graficamos la tabla
+
+ggplot(tablaValoresPolizaAsociados, aes(x = k, y = Vx)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Valores póliza asociados a la prima neta", x = "k", y = "Vx") 
+
 ```
 
 ### d. Valores póliza asociados a la prima recargada
@@ -281,9 +318,35 @@ $$\Vx[k]{`r xEdad`: \angl{`r n`}}= \frac{1}{\Ex[k]{`r xEdad`}}(-1000+.6G+(-500+.
 $$-(3000+1.003SA_M)A_{\nthtop*{1}{`r xEdad`}:\angl{k}})$$
 
 
-```{r echo=FALSE, results=FALSE}
+```{r echo=FALSE}
+
+# Creamos la tabla de valores póliza asociados a la prima recargada
+
+tablaValoresPolizaAsociadosRecargada <- data.frame(k = numeric(n+1), Vx = numeric(n+1))
+
+# Llenamos la tabla
+
+for (k in seq(0, n, 1)){
+  tablaValoresPolizaAsociadosRecargada$Vx[k+1] <- valorPolizaRecargado(k, primaRecargada)
+  tablaValoresPolizaAsociadosRecargada$k[k+1] <- k
+}
+
+#Mostramos la tabla
+
+tablaValoresPolizaAsociadosRecargada
+
+
+# Graficamos la tabla
+
+ggplot(tablaValoresPolizaAsociadosRecargada, aes(x = k, y = Vx)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Valores póliza asociados a la prima recargada", x = "k", y = "Vx") 
 
 ```
+
+
+
 
 ### e. Valores garantizados
 
@@ -291,9 +354,29 @@ $$-(3000+1.003SA_M)A_{\nthtop*{1}{`r xEdad`}:\angl{k}})$$
 
 Calculado retrospectivamente obtenemos la siguiente fórmula:
 
+```{r echo=FALSE}
+# Creamos la tabla de valores garantizados
+
+tablaValoresGarantizados <- data.frame(k = numeric(3), Vx = numeric(3))
+
+# Llenamos la tabla
+
+for (k in seq(1, 3, 1)){
+  tablaValoresGarantizados$Vx[k] <- valoresGarantizados(valorPoliza(k, primaNeta), k)
+  tablaValoresGarantizados$k[k] <- k
+}
+
+#Mostramos la tabla
+
+tablaValoresGarantizados
 
 
-```{r echo=FALSE, results=FALSE}
+# Graficamos la tabla
+
+ggplot(tablaValoresGarantizados, aes(x = k, y = Vx)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Valores garantizados", x = "k", y = "Vx") 
 
 ```
 
@@ -305,13 +388,23 @@ Calculado retrospectivamente obtenemos la siguiente fórmula:
 
 (Elige las variables a analizar, mínimo 2, y los supuestos realistas que vas a utilizar)
 
+
+
 ### b. Valor Presente Neto (VPN)
 
 (Fórmula para el cálculo y valor obtenido)
 
+```{r}
+
+```
+
 ### c. Margen de Utilidad (MU)
 
 (Fórmula para el cálculo y valor obtenido)
+
+```{r}
+
+```
 
 ## 2. Análisis estocástico
 
@@ -319,9 +412,17 @@ Calculado retrospectivamente obtenemos la siguiente fórmula:
 
 (Escoge 2 variables y realiza el stress testing)
 
+```{r}
+
+```
+
 ### b. Análisis por escenarios para el VPN y MU
 
 (Plantea 5 escenarios para realizar el análisis)
+
+```{r}
+
+```
 
 ### c. Análisis por simulación
 
