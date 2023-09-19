@@ -431,15 +431,13 @@ desembolsoFijo <- function(salida="Muerte"){
 flujos_utilidad <- function(kTemp){
   #ktemo solo está entre 1 a n
   if (kTemp %in% c(1,2,3,4)){
-    ingreso <- (gastoPropPrima(kTemp)*primaRecargada-gastoFijoPrima(kTemp))*(1+iTasaEstimada)*tablaMortalidadEstimada$lx[xEdad+kTemp] + tablaValoresPolizaAsociadosRecargada$Vx[kTemp]*(1+iTasaEstimada)*tablaMortalidadEstimada$lx[xEdad+kTemp]
-    egreso <-(desembolsoFijo()+desembolsoProp()*saMuerte)*tablaMortalidadEstimada$dx[xEdad+kTemp]
-    reserva <- tablaValoresPolizaAsociadosRecargada$Vx[kTemp+1]*tablaMortalidadEstimada$lx[xEdad+kTemp+1]
-    resultado <- 1000*(ingreso-egreso-reserva)/tablaMortalidadEstimada$lx[xEdad+1]} else {
+    ingreso <- (gastoPropPrima(kTemp)*primaRecargada-gastoFijoPrima(kTemp) + tablaValoresPolizaAsociadosRecargada$Vx[kTemp])*(1+iTasaEstimada)*tablaMortalidadEstimada$lx[xEdad+kTemp]} 
+    else {
     ingreso <- tablaValoresPolizaAsociadosRecargada$Vx[kTemp]*(1+iTasaEstimada)*tablaMortalidadEstimada$lx[xEdad+kTemp]
+    }
     egreso <-(desembolsoFijo()+desembolsoProp()*saMuerte)*tablaMortalidadEstimada$dx[xEdad+kTemp]
     reserva <- tablaValoresPolizaAsociadosRecargada$Vx[kTemp+1]*tablaMortalidadEstimada$lx[xEdad+kTemp+1]
     resultado <- 1000*(ingreso-egreso-reserva)/tablaMortalidadEstimada$lx[xEdad+1]
-    }
     return(resultado)
 }
 ```
