@@ -384,23 +384,104 @@ ggplot(tablaValoresGarantizados, aes(x = k, y = Vx)) +
 
 ## 1. Análisis determinista
 
+```{r, echo=F, results=F}
+iTasaEstimada <- .05
+tablaMortalidadEstimada <- tablaMortalidad
+
+gastoPropPrima <- function(kTemp){
+  #Es el complemento del ejerccio por cómo está configurado
+  if(kTemp==1){
+    resultado <- .6
+  } else if(kTemp %in% c(2,3)){
+    resultado <- .8
+  }else if(kTemp>=4){
+    resultado <- .95
+  }
+  return(resultado)
+}
+gastoFijoPrima <- function(kTemp){
+    if(kTemp==1){
+    resultado <- 1000
+  } else if(kTemp %in% c(2,3)){
+    resultado <- 500
+  }else if(kTemp>=4){
+    resultado <- 100
+  }
+  return(resultado)
+}
+
+desembolsoProp <- function(salida="Muerte"){
+  if(salida =="Muerte"){
+    resultado <- 1.003
+  } else {
+    resultado <- 1.001
+  }
+  return(resultado)
+}
+desembolsoFijo <- function(salida="Muerte"){
+  if(salida =="Muerte"){
+    resultado <- 3000
+  } else {
+    resultado <- 1000
+  }
+  return(resultado)
+}
+
+
+flujos_utilidad <- function(kTemp){
+  #ktemo solo está entre 1 a n
+  if (kTemp %in% c(1,2,3,4)){
+    ingreso <- (gastoPropPrima(kTemp)*primaRecargada-gastoFijoPrima(kTemp))*(1+iTasaEstimada)*tablaMortalidadEstimada$lx[xEdad+kTemp] + tablaValoresPolizaAsociadosRecargada$Vx[kTemp]*(1+iTasaEstimada)*tablaMortalidadEstimada$lx[xEdad+kTemp]
+    egreso <-(desembolsoFijo()+desembolsoProp()*saMuerte)*tablaMortalidadEstimada$dx[xEdad+kTemp]
+    reserva <- tablaValoresPolizaAsociadosRecargada$Vx[kTemp+1]*tablaMortalidadEstimada$lx[xEdad+kTemp+1]
+    resultado <- 1000*(ingreso-egreso-reserva)/tablaMortalidadEstimada$lx[xEdad+1]} else {
+    ingreso <- tablaValoresPolizaAsociadosRecargada$Vx[kTemp]*(1+iTasaEstimada)*tablaMortalidadEstimada$lx[xEdad+kTemp]
+    egreso <-(desembolsoFijo()+desembolsoProp()*saMuerte)*tablaMortalidadEstimada$dx[xEdad+kTemp]
+    reserva <- tablaValoresPolizaAsociadosRecargada$Vx[kTemp+1]*tablaMortalidadEstimada$lx[xEdad+kTemp+1]
+    resultado <- 1000*(ingreso-egreso-reserva)/tablaMortalidadEstimada$lx[xEdad+1]
+    }
+    return(resultado)
+}
+```
+
 ### a. Hipótesis demográ ficas y financieras
 
 (Elige las variables a analizar, mínimo 2, y los supuestos realistas que vas a utilizar)
 
+Vamos a analizar las variables de tasa de interés y de tabla de mortalidad y sus efectos en las medidas de VPN y MU. 
 
+Nuestro mejor estimador de estas variables es que la tasa de interés con la que traeremos a valor presente todos los flujos será de 7.5%, porque se espera que las tasas  de interés bajen paulatinamente y considerando que actualmente nos encontramos con tasas altísimas del 11% aproximadamente.(CHECAR)
+
+Así mismo consideramos que la tabla de mortalidad será ______(CHECAR), esto porque somos conservadores y seguimos la tabla de mortalidad presentada por ________. (CHECAR)
 
 ### b. Valor Presente Neto (VPN)
 
 (Fórmula para el cálculo y valor obtenido)
 
-```{r}
+$$VPN = \sum_{i=1}^{19}F_{k}v^{k}$$
 
+donde $F_{k}$ representa los flujos vencidos de cada año (solo durante ese año) hasta la vigencia, tomando en cuenta el final de la vigencia. Tomamos en cuenta que estos flujos son invertidos a la tasa que estimamos anteriormente y previstos con la tabla de mortalidad antes mencioanda. Así mismo, aclaramos que todos los cálculos actuariales provienen de los cálculos base.
+
+Con lo cual 
+
+```{r, echo=F}
+medidaVPN <- function(){
+  resultado <- 0
+  for (kTemp in seq(1,n,1)){
+    resultado <- resultado + flujos_utilidad(kTemp)*v^(kTemp)
+  }
+  return(resultado)
+}
+
+medidaVPN()
 ```
+
 
 ### c. Margen de Utilidad (MU)
 
 (Fórmula para el cálculo y valor obtenido)
+
+
 
 ```{r}
 
