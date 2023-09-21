@@ -431,7 +431,7 @@ desembolsoFijo <- function(salida="Muerte"){
 flujos_utilidad <- function(kTemp){
   #ktemo solo está entre 1 a n
   if (kTemp %in% c(1,2,3,4)){
-    ingreso <- (gastoPropPrima(kTemp)*primaRecargada-gastoFijoPrima(kTemp) + tablaValoresPolizaAsociadosRecargada$Vx[kTemp])*(1+iTasaEstimada)*tablaMortalidadEstimada$lx[xEdad+kTemp]} 
+    ingreso <- (gastoPropPrima(kTemp)*primaRecargada - gastoFijoPrima(kTemp) + tablaValoresPolizaAsociadosRecargada$Vx[kTemp])*(1+iTasaEstimada)*tablaMortalidadEstimada$lx[xEdad+kTemp]} 
     else {
     ingreso <- tablaValoresPolizaAsociadosRecargada$Vx[kTemp]*(1+iTasaEstimada)*tablaMortalidadEstimada$lx[xEdad+kTemp]
     }
@@ -464,6 +464,7 @@ Con lo cual
 
 ```{r, echo=F}
 medidaVPN <- function(){
+  v <- 1/(1+iTasaEstimada)
   resultado <- 0
   for (kTemp in seq(1,n,1)){
     resultado <- resultado + flujos_utilidad(kTemp)*v^(kTemp)
