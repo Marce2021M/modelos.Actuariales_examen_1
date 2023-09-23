@@ -176,7 +176,7 @@ anualidad <- function(edad, vigencia){
 }
 
 dotal <- function(edad, vigencia){
-  resultado <- v^(n)*tablaMortalidad$lx[xEdad+vigencia+1]/tablaMortalidad$lx[xEdad+1]
+  resultado <- v^(vigencia)*tablaMortalidad$lx[xEdad+vigencia+1]/tablaMortalidad$lx[xEdad+1]
   return(resultado)
 }
 
@@ -299,6 +299,7 @@ ggplot(tablaValoresPolizaAsociados, aes(x = k, y = Vx)) +
 
 ```
 
+
 ### d. Valores póliza asociados a la prima recargada
 
 (Fórmula para el cálculo y valores obtenidos para toda la vigencia de la póliza)
@@ -354,6 +355,9 @@ ggplot(tablaValoresPolizaAsociadosRecargada, aes(x = k, y = Vx)) +
 
 Calculado retrospectivamente obtenemos la siguiente fórmula:
 
+
+Los valores garantizados para la prima neta son:
+
 ```{r echo=FALSE}
 # Creamos la tabla de valores garantizados
 
@@ -380,12 +384,41 @@ ggplot(tablaValoresGarantizados, aes(x = k, y = Vx)) +
 
 ```
 
+
+Los valores garantizados para la prima recargada son:
+
+```{r echo=FALSE}
+# Creamos la tabla de valores garantizados
+
+tablaValoresGarantizadosRecargada <- data.frame(k = numeric(3), Vx = numeric(3))
+
+# Llenamos la tabla
+
+for (k in seq(1, 3, 1)){
+  tablaValoresGarantizadosRecargada$Vx[k] <- valoresGarantizados(valorPolizaRecargado(k, primaNeta), k)
+  tablaValoresGarantizadosRecargada$k[k] <- k
+}
+
+#Mostramos la tabla
+
+tablaValoresGarantizadosRecargada
+
+
+# Graficamos la tabla
+
+ggplot(tablaValoresGarantizadosRecargada, aes(x = k, y = Vx)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Valores garantizados", x = "k", y = "Vx") 
+
+```
+
 # Profit testing
 
 ## 1. Análisis determinista
 
 ```{r, echo=F, results=F}
-iTasaEstimada <- .05
+iTasaEstimada <- .075
 tablaMortalidadEstimada <- tablaMortalidad
 
 gastoPropPrima <- function(kTemp){
@@ -431,13 +464,17 @@ desembolsoFijo <- function(salida="Muerte"){
 flujos_utilidad <- function(kTemp){
   #ktemo solo está entre 1 a n
   if (kTemp %in% c(1,2,3,4)){
-    ingreso <- (gastoPropPrima(kTemp)*primaRecargada - gastoFijoPrima(kTemp) + tablaValoresPolizaAsociadosRecargada$Vx[kTemp])*(1+iTasaEstimada)*tablaMortalidadEstimada$lx[xEdad+kTemp]} 
+    ingreso <- (gastoPropPrima(kTemp)*primaRecargada - gastoFijoPrima(kTemp) + tablaValoresPolizaAsociadosRecargada$Vx[kTemp])*(1+iTasaEstimada)*(tablaMortalidadEstimada$lx[xEdad+kTemp]/tablaMortalidadEstimada$lx[xEdad+1])
+    } 
     else {
-    ingreso <- tablaValoresPolizaAsociadosRecargada$Vx[kTemp]*(1+iTasaEstimada)*tablaMortalidadEstimada$lx[xEdad+kTemp]
+    ingreso <- tablaValoresPolizaAsociadosRecargada$Vx[kTemp]*(1+iTasaEstimada)*(tablaMortalidadEstimada$lx[xEdad+kTemp]/tablaMortalidadEstimada$lx[xEdad+1])
     }
-    egreso <-(desembolsoFijo()+desembolsoProp()*saMuerte)*tablaMortalidadEstimada$dx[xEdad+kTemp]
-    reserva <- tablaValoresPolizaAsociadosRecargada$Vx[kTemp+1]*tablaMortalidadEstimada$lx[xEdad+kTemp+1]
-    resultado <- 1000*(ingreso-egreso-reserva)/tablaMortalidadEstimada$lx[xEdad+1]
+
+    egreso <-(desembolsoFijo()+desembolsoProp()*saMuerte)*(tablaMortalidadEstimada$dx[xEdad+kTemp]/tablaMortalidadEstimada$lx[xEdad+1])
+
+    reserva <- tablaValoresPolizaAsociadosRecargada$Vx[kTemp+1]*(tablaMortalidadEstimada$lx[xEdad+kTemp+1]/tablaMortalidadEstimada$lx[xEdad+1])
+
+    resultado <- 100*round(ingreso-egreso-reserva, digits = 9)
     return(resultado)
 }
 ```
@@ -456,35 +493,61 @@ Así mismo consideramos que la tabla de mortalidad será ______(CHECAR), esto po
 
 (Fórmula para el cálculo y valor obtenido)
 
-$$VPN = \sum_{i=1}^{19}F_{k}v^{k}$$
+$$VPN(r) = \sum_{k=1}^{19}F_{k}v^{k}_{r}$$
 
-donde $F_{k}$ representa los flujos vencidos de cada año (solo durante ese año) hasta la vigencia, tomando en cuenta el final de la vigencia. Tomamos en cuenta que estos flujos son invertidos a la tasa que estimamos anteriormente y previstos con la tabla de mortalidad antes mencioanda. Así mismo, aclaramos que todos los cálculos actuariales provienen de los cálculos base.
+donde $F_{k}$ representa los flujos vencidos de cada año (solo durante ese año) hasta la vigencia, tomando en cuenta el final de la vigencia. 
 
-Con lo cual 
+Es decir $F_{k} = Ingreso_{k}(1+i^{*}) - Egreso_{k} - Reserva_{k}$
 
-```{r, echo=F}
-medidaVPN <- function(){
-  v <- 1/(1+iTasaEstimada)
+Donde 
+
+$Ingreso_{k}(1+i^{*})$: es el ingreso (menos gatos) y la reserva obtenidas al inicio del año y traídas a valor futuro que corresponde al final del año con la tasa de costo de capital.(CHECAR)
+
+$Egreso_{k}$: es el egreso obtenido al final del año (por muertes).
+
+$Reserva_{k}$: es la reserva que se debe componer al final del año.
+
+```{r, echo=F, results=F}
+medidaVPN <- function(rCC=.16){
+   #ktemo solo está entre 1 a n
+  v <- 1/(1+rCC)
   resultado <- 0
   for (kTemp in seq(1,n,1)){
     resultado <- resultado + flujos_utilidad(kTemp)*v^(kTemp)
   }
   return(resultado)
 }
-
-medidaVPN()
 ```
+
+Con lo que con las hipótesis planteadas obtenemos un VPN de \$`r medidaVPN()`.
 
 
 ### c. Margen de Utilidad (MU)
 
 (Fórmula para el cálculo y valor obtenido)
 
+$$MU(r) = \frac{VPN(r)}{\sum_{k=1}^{19}R_{k}v^{k}_{r}}$$
 
+```{r, echo=F, results=F}
+# Cuidado con kTemp, está trasladado
+revenues <- function(kTemp){
+  resultado <- (gastoPropPrima(kTemp)*primaRecargada - gastoFijoPrima(kTemp) + tablaValoresPolizaAsociadosRecargada$Vx[kTemp])*(tablaMortalidadEstimada$lx[xEdad+kTemp]/tablaMortalidadEstimada$lx[xEdad+1])
+  return(resultado*100)
+}
 
-```{r}
+medidaMU <- function(rCC=.16){
+  v <- 1/(1+rCC)
+  resultado <- 0
+  for (kTemp in seq(1,n,1)){
+    resultado <- resultado + revenues(kTemp)*v^(kTemp-1)
+  }
+  return(medidaVPN()/resultado)
+}
+
 
 ```
+
+Con lo cual obtenemos un MU de `r medidaMU()`.
 
 ## 2. Análisis estocástico
 
@@ -492,15 +555,93 @@ medidaVPN()
 
 (Escoge 2 variables y realiza el stress testing)
 
-```{r}
+Escogemos las variables de tasa de interés y de tabla de mortalidad y realizamos el stress testing para el VPN y MU.
+
+Variamos primero la tasa de interés de 3% a 10%
+
+```{r, echo=FALSE}
+rangoTasaInteres <- seq(.03, .1, .001)
+
+rangoTasaInteresVPN <- c()
+rangoTasaInteresMU <- c()
+
+# Inicialización de vectores
+rangoTasaInteresVPN <- numeric(length(rangoTasaInteres))
+rangoTasaInteresMU <- numeric(length(rangoTasaInteres))
+
+for (i in seq_along(rangoTasaInteres)){
+  iTasaEstimada <- rangoTasaInteres[i]
+  rangoTasaInteresVPN[i] <- medidaVPN()  
+  rangoTasaInteresMU[i] <- medidaMU()    
+}
+
+
+# Para la gráfica de VPN vs tasa de interés
+ggplot() +
+  geom_line(aes(x = rangoTasaInteres, y = rangoTasaInteresVPN)) +
+  geom_point(aes(x = rangoTasaInteres, y = rangoTasaInteresVPN)) +
+  geom_vline(aes(xintercept = 0.075), linetype="dashed", color="blue") +
+  geom_vline(aes(xintercept = 0.05), linetype="dashed", color="red") +
+  annotate("text", x = 0.075, y = max(rangoTasaInteresVPN), label = "Tasa Estimada") +
+  annotate("text", x = 0.05, y = max(rangoTasaInteresVPN), label = "Tasa Base") +
+  labs(title = "VPN vs tasa de interés", x = "Tasa de interés", y = "VPN")
+
+# Para la gráfica de MU vs tasa de interés
+ggplot() +
+  geom_line(aes(x = rangoTasaInteres, y = rangoTasaInteresMU)) +
+  geom_point(aes(x = rangoTasaInteres, y = rangoTasaInteresMU)) +
+  geom_vline(aes(xintercept = 0.075), linetype="dashed", color="blue") +
+  geom_vline(aes(xintercept = 0.05), linetype="dashed", color="red") +
+  annotate("text", x = 0.075, y = max(rangoTasaInteresMU), label = "Tasa Estimada") +
+  annotate("text", x = 0.05, y = max(rangoTasaInteresMU), label = "Tasa Base") +
+  labs(title = "MU vs tasa de interés", x = "Tasa de interés", y = "MU")
+
 
 ```
+
+Ahora variaremos la tabla de mortalidad de la siguiente manera:
+
+
 
 ### b. Análisis por escenarios para el VPN y MU
 
 (Plantea 5 escenarios para realizar el análisis)
 
-```{r}
+Ahora plantearemos 5 escenarios para realizar el análisis.
+
+Los escenarios serán los siguientes:
+
+1. Escenario optimista: Tasa de interés del 10% y tabla de mortalidad de la aseguradora.
+2. Escenario pesimista: Tasa de interés del 3% y tabla de mortalidad de la aseguradora.
+3. Escenario conservador: Tasa de interés del 7.5% y tabla de mortalidad de la aseguradora.
+4. Escenario optimista: Tasa de interés del 10% y tabla de mortalidad de la aseguradora.
+5. Escenario pesimista: Tasa de interés del 3% y tabla de mortalidad de la aseguradora.
+
+```{r, echo=FALSE}
+escenarios <- c("Escenario 1", "Escenario 2", "Escenario 3", "Escenario 4", "Escenario 5")
+medidasEscenarios <- c("VPN", "MU")
+
+rangoEscenariosTasa <- c(.1, .03, .075, .1, .03)
+
+rangoEscenariosMortalidad <- c()
+
+# Crear una matriz con NA (puedes reemplazar NA con cualquier otro valor inicial si lo prefieres)
+wide_matrix <- matrix(NA, nrow = length(escenarios), ncol = length(medidasEscenarios), dimnames = list(escenarios, medidasEscenarios))
+
+# Iterar sobre cada fila y columna de la matriz
+for (i in 1:nrow(wide_matrix)) {
+  for (j in 1:ncol(wide_matrix)) {
+    # Convertir el valor ingresado a numérico y asignarlo a la celda correspondiente
+    wide_matrix[i, j] <- as.numeric()
+  }
+}
+
+# Mostrar la matriz actualizada
+print(wide_matrix)
+
+
+
+print(wide_matrix)
 
 ```
 
