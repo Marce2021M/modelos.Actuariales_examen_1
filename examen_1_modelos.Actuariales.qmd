@@ -56,7 +56,7 @@ qTablaMortalidad <- data.frame(px = numeric(length(tablaMortalidad$lx)-xEdad), k
 
 for(i in (xEdad+1):length(tablaMortalidad$lx)){
   qTablaMortalidad$px[i-xEdad] <- tablaMortalidad$lx[i]/tablaMortalidad$lx[xEdad+1] 
-  qTablaMortalidad$kSuperv[i-xEdad] <- i-xEdad
+  qTablaMortalidad$kSuperv[i-xEdad] <- i-xEdad-1
 }
 
 ######-------------------------------------
@@ -418,8 +418,6 @@ ggplot(tablaValoresGarantizadosRecargada, aes(x = k, y = Vx)) +
 ## 1. Análisis determinista
 
 ```{r, echo=F, results=F}
-iTasaEstimada <- .075
-tablaMortalidadEstimada <- tablaMortalidad
 
 gastoPropPrima <- function(kTemp){
   #Es el complemento del ejerccio por cómo está configurado
@@ -477,17 +475,58 @@ flujos_utilidad <- function(kTemp){
     resultado <- 100*round(ingreso-egreso-reserva, digits = 9)
     return(resultado)
 }
+
+#------ Tabla de Mortalidad Estimada
+generate_mortality_table_gamma <- function(alpha, start_age = 46, l_start = 10000, max_age = 101, beta = 1/4) {
+  # Vector de edades
+  ages <- start_age:max_age
+  
+  # Calcula la función de supervivencia gamma para cada edad
+  Sx <- 1 - pgamma(ages - start_age, shape = alpha, rate = beta)
+  
+  # Calcula lx basado en la función de supervivencia
+  lx <- l_start * Sx
+  
+  # Calcula dx
+  dx <- -c(diff(lx), NA) # Agregamos NA al final porque no hay dx para la última edad
+  
+  # Crear data.frame para la tabla de mortalidad
+  mortality_table <- data.frame(Age = ages, lx = lx, dx = dx)
+  
+  # Agregar filas con NA hasta el inicio
+  na_rows <- data.frame(Age = (0):(start_age-1), lx = rep(NA, start_age), dx = rep(NA, start_age))
+  mortality_table <- rbind(na_rows, mortality_table)
+  
+  return(mortality_table)
+}
+
 ```
 
-### a. Hipótesis demográ ficas y financieras
+### a. Hipótesis demográficas y financieras
 
 (Elige las variables a analizar, mínimo 2, y los supuestos realistas que vas a utilizar)
 
 Vamos a analizar las variables de tasa de interés y de tabla de mortalidad y sus efectos en las medidas de VPN y MU. 
 
-Nuestro mejor estimador de estas variables es que la tasa de interés con la que traeremos a valor presente todos los flujos será de 7.5%, porque se espera que las tasas  de interés bajen paulatinamente y considerando que actualmente nos encontramos con tasas altísimas del 11% aproximadamente.(CHECAR)
+Nuestro mejor estimador de estas variables es que la tasa de interés con la que traeremos a valor presente todos los flujos será de 7.5%, porque se espera que las tasas  de interés bajen paulatinamente y considerando que actualmente nos encontramos con tasas altísimas del 11% aproximadamente.
 
-Así mismo consideramos que la tabla de mortalidad será ______(CHECAR), esto porque somos conservadores y seguimos la tabla de mortalidad presentada por ________. (CHECAR)
+Así mismo consideramos que la tabla de mortalidad será una $Gamma(8, 1/4)$, esto porque suponemos que la tala de mortalidad se comporta como una normal y queremos además modelar mayores sobrevivientes que llegan a tener 100 años.
+
+Esta gráfica se ve la siguiene forma:
+
+```{r, echo=F}
+iTasaEstimada <- .075
+tablaMortalidadEstimada <- generate_mortality_table_gamma(8)
+
+# Gráfico
+ggplot(data = tablaMortalidadEstimada, aes(x = Age, y = lx/10000)) +
+  geom_line(na.rm = TRUE) +
+  labs(title = paste("Tabla de Mortalidad estimada"),
+       x = "Edad",
+       y = "lx") +
+  theme_minimal()+
+  coord_cartesian(xlim = c(46, max(tablaMortalidadEstimada$Age)))
+```
 
 ### b. Valor Presente Neto (VPN)
 
@@ -508,6 +547,7 @@ $Egreso_{k}$: es el egreso obtenido al final del año (por muertes).
 $Reserva_{k}$: es la reserva que se debe componer al final del año.
 
 ```{r, echo=F, results=F}
+
 medidaVPN <- function(rCC=.16){
    #ktemo solo está entre 1 a n
   v <- 1/(1+rCC)
@@ -557,10 +597,11 @@ Con lo cual obtenemos un MU de `r medidaMU()`.
 
 Escogemos las variables de tasa de interés y de tabla de mortalidad y realizamos el stress testing para el VPN y MU.
 
-Variamos primero la tasa de interés de 3% a 10%
+Variamos primero la tasa de interés de 3% a 10% dejando los supuestos base fijos.
 
 ```{r, echo=FALSE}
 rangoTasaInteres <- seq(.03, .1, .001)
+tablaMortalidadEstimada <- tablaMortalidad
 
 rangoTasaInteresVPN <- c()
 rangoTasaInteresMU <- c()
@@ -599,7 +640,61 @@ ggplot() +
 
 ```
 
-Ahora variaremos la tabla de mortalidad de la siguiente manera:
+Ahora variaremos la tabla de mortalidad cambiando los valores del parámetro $\alpha$. El efecto de estos cambios en la tabla se ven de esta forma:
+
+```{r, echo=F, results=F}
+
+
+beta_const = 1/4 # Valor constante para el parámetro de tasa
+alphas = c(5,6,7,8,9) # Diferentes valores para alpha
+
+# Crear un dataframe con valores de x y las densidades para cada alpha
+df <- data.frame(x = rep(seq(0, 55, length.out = 1000), length(alphas)))
+df$y <- unlist(lapply(alphas, function(alpha) (1 - pgamma(df$x[1:1000], shape = alpha, rate = beta_const))))
+df$alpha <- factor(rep(alphas, each = 1000), labels = paste("alpha =", alphas))
+
+ggplot(df, aes(x=x, y=y, color=alpha)) +
+  geom_line() +
+  labs(title = "Función de Supervivencia Gamma variando alpha",
+       x = "x",
+       y = "S(x)",
+       color = "Valor de Alpha") +
+  theme_minimal()
+```
+
+Y con lo cual los cambios en VPN y MU se ven gráficamente de la siguiente forma:
+
+```{r, echo=FALSE}
+iTasaEstimada <- .05
+rangoTablaMortalidad <- seq(4,9,.1)
+
+# Inicialización de vectores
+
+rangoTablaMortalidadVPN <- numeric(length(rangoTablaMortalidad))
+
+rangoTablaMortalidadMU <- numeric(length(rangoTablaMortalidad))
+
+for (i in seq_along(rangoTablaMortalidad)){
+  tablaMortalidadEstimada <- generate_mortality_table_gamma(rangoTablaMortalidad[i])
+  rangoTablaMortalidadVPN[i] <- medidaVPN()  
+  rangoTablaMortalidadMU[i] <- medidaMU()    
+}
+
+ggplot() +
+  geom_line(aes(x = rangoTablaMortalidad, y = rangoTablaMortalidadVPN)) +
+  geom_point(aes(x = rangoTablaMortalidad, y = rangoTablaMortalidadVPN)) +
+  geom_vline(aes(xintercept = 8), linetype="dashed", color="blue") +
+  annotate("text", x = 8, y = max(rangoTablaMortalidadVPN), label = "Tabla Estimada") +
+  labs(title = "VPN vs tabla de mortalidad", x = "Tabla de mortalidad", y = "VPN")
+
+ggplot() +
+  geom_line(aes(x = rangoTablaMortalidad, y = rangoTablaMortalidadMU)) +
+  geom_point(aes(x = rangoTablaMortalidad, y = rangoTablaMortalidadMU)) +
+  geom_vline(aes(xintercept = 8), linetype="dashed", color="blue") +
+  annotate("text", x = 8, y = max(rangoTablaMortalidadMU), label = "Tabla Estimada") +
+  labs(title = "MU vs tabla de mortalidad", x = "Tabla de mortalidad", y = "MU")
+
+```
 
 
 
@@ -611,39 +706,43 @@ Ahora plantearemos 5 escenarios para realizar el análisis.
 
 Los escenarios serán los siguientes:
 
-1. Escenario optimista: Tasa de interés del 10% y tabla de mortalidad de la aseguradora.
-2. Escenario pesimista: Tasa de interés del 3% y tabla de mortalidad de la aseguradora.
-3. Escenario conservador: Tasa de interés del 7.5% y tabla de mortalidad de la aseguradora.
-4. Escenario optimista: Tasa de interés del 10% y tabla de mortalidad de la aseguradora.
-5. Escenario pesimista: Tasa de interés del 3% y tabla de mortalidad de la aseguradora.
+# Descripción detallada de los escenarios:
+1. Escenario 1 (Pesimista): Tasa de interés del 3% y tabla de mortalidad con alfa=4.
+2. Escenario 2 (Conservador): Tasa de interés del 5% y tabla de mortalidad con alfa=6.5.
+3. Escenario 3 (Estimado): Tasa de interés del 7.5% y tabla de mortalidad con alfa=8.
+4. Escenario 4 (Optimista): Tasa de interés del 10% y tabla de mortalidad con alfa=9.
+5.- Escenario 5 (Base): Tasa de interés del  5%  y tabla de mortalidad base con la que calculamos las reservas.
+
+Los resultados de VPN y MU de los primeros 4 escenarios se muestran en la siguiente tabla:
 
 ```{r, echo=FALSE}
-escenarios <- c("Escenario 1", "Escenario 2", "Escenario 3", "Escenario 4", "Escenario 5")
+escenarios <- c("Escenario 1", "Escenario 2", "Escenario 3", "Escenario 4")
 medidasEscenarios <- c("VPN", "MU")
 
-rangoEscenariosTasa <- c(.1, .03, .075, .1, .03)
+rangoEscenariosTasa <- c(.03, .05, .075, .1)
 
-rangoEscenariosMortalidad <- c()
+rangoEscenariosMortalidad <- c(4, 6.5, 8, 9)
 
 # Crear una matriz con NA (puedes reemplazar NA con cualquier otro valor inicial si lo prefieres)
 wide_matrix <- matrix(NA, nrow = length(escenarios), ncol = length(medidasEscenarios), dimnames = list(escenarios, medidasEscenarios))
 
 # Iterar sobre cada fila y columna de la matriz
 for (i in 1:nrow(wide_matrix)) {
-  for (j in 1:ncol(wide_matrix)) {
-    # Convertir el valor ingresado a numérico y asignarlo a la celda correspondiente
-    wide_matrix[i, j] <- as.numeric()
-  }
+  # Convertir el valor ingresado a numérico y asignarlo a la celda correspondiente
+  iTasaEstimada <- rangoEscenariosTasa[i]
+  tablaMortalidadEstimada <- generate_mortality_table_gamma(rangoEscenariosMortalidad[i])
+
+  wide_matrix[i, 1] <- medidaVPN()
+  wide_matrix[i, 2] <- medidaMU()
 }
 
 # Mostrar la matriz actualizada
-print(wide_matrix)
-
-
 
 print(wide_matrix)
 
 ```
+
+En el quinto escenario obviamente obtenemos MU=VPN=0
 
 ### c. Análisis por simulación
 
