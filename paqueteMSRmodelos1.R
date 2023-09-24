@@ -260,12 +260,56 @@ funcMuerteCostos <- function(kTemp){
   return(resultado)
 }
 
+#EXTRAEMOS MÁS DATOS
+
+######-------------------------------------
+#Valores observados
+
+valoresObservados_tasaInteres <- read_excel("Valores observados.xlsx", sheet="Observados Promedio", range="A3:B28")
+
+valoresObservados_costosPromedios <- read_excel("Valores observados.xlsx", sheet="Observados Promedio", range="D3:G29")
+
+valoresObservados_carteraObservados <- read_excel("Valores observados.xlsx", sheet="Cartera Observados", range="A1:B101")
+
+valoresObservados_qxPromedios <- read_excel("Valores observados.xlsx", sheet="Observados Promedio", range="I2:J103")
+
+#FUNCIONES DE MORTALIDAD 
+#función 1
 funcMortalidad <- function(kTemp){
   #kTemp es >=0
   resultado <- valoresObservados_qxPromedios$qx[xEdad+kTemp+1]
   return(resultado)
   
 }
+#funcion2
+
+# Iniciar l_0
+l_0 <- 100
+lx <- numeric(max(valoresObservados_carteraObservados$'K(x)') + 1)
+lx[1] <- l_0
+
+# Calcular dx y lx
+for (k in 0:max(valoresObservados_carteraObservados$'K(x)')) {
+  dx <- sum(valoresObservados_carteraObservados$'K(x)' == k)
+  if (k > 0) {
+    lx[k+1] <- lx[k] - dx
+  }
+}
+
+# Crear el dataframe final de lx y dx
+tabla_mortalidad <- data.frame(x = 0:max(valoresObservados_carteraObservados$'K(x)'), lx = lx, dx = -c(diff(lx), NA))
+
+# Calcular qx
+tabla_mortalidad$qx <- tabla_mortalidad$dx / tabla_mortalidad$lx
+
+funcMortalidad2 <- function(kTemp){
+  #kTemp es >=0
+  resultado <- tabla_mortalidad$qx[xEdad+kTemp+1]
+  return(resultado)
+  
+}
+
+#ASSET SHARE
 
 assetShare <- function(kTemp, funcInteres, funcPrimaCostos, funcMuerteCostos,funcMortalidad, prima){
   if(kTemp>=1 && kTemp<=n){
