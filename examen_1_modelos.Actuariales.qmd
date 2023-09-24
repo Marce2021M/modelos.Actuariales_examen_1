@@ -12,6 +12,8 @@ format:
      include-in-header:  
         - text: |
             \usepackage{actuarialsymbol}
+            \usepackage{booktabs}
+            \usepackage{float}
      embed-resources: true
 editor_options: 
   chunk_output_type: console
@@ -96,14 +98,7 @@ valoresGarantizados <- function(valorPoliza, anio){
   }
 }
 
-######-------------------------------------
-#Valores observados
 
-valoresObservados_tasaInteres <- read_excel("Valores observados.xlsx", sheet="Observados Promedio", range="A3:B28")
-
-valoresObservados_costosPromedios <- read_excel("Valores observados.xlsx", sheet="Observados Promedio", range="D3:G29")
-
-valoresObservados_carteraObservados <- read_excel("Valores observados.xlsx", sheet="Cartera Observados", range="A1:C101")
 ```
 
 # Nota Técnica
@@ -845,13 +840,155 @@ kable(df_resumen, caption = "Promedio y desviación estándar de las 1000 realiz
 
 # Para una cartera de 100 asegurados: Fondo Total
 
+```{r, echo=FALSE}
+######-------------------------------------
+#Valores observados
+
+valoresObservados_tasaInteres <- read_excel("Valores observados.xlsx", sheet="Observados Promedio", range="A3:B28")
+
+valoresObservados_costosPromedios <- read_excel("Valores observados.xlsx", sheet="Observados Promedio", range="D3:G29")
+
+valoresObservados_carteraObservados <- read_excel("Valores observados.xlsx", sheet="Cartera Observados", range="A1:C101")
+
+valoresObservados_qxPromedios <- read_excel("Valores observados.xlsx", sheet="Observados Promedio", range="I2:J103")
+
+```
+
 ## 1. Asset-share
 
 (Fórmula para el cálculo y valores obtenidos para toda la vigencia de la póliza) 
 
+Utilizaremos la fórmula recursiva para calcular el Asset-share:
+
+$$\actsymb[k+1]{\mathit{AS}}{}=\frac{[\actsymb[k]{\mathit{AS}}{}+G_{k}(1-c_{k})-e_{k}](1+i_{k,k+1})-q_{x+k}(b_{k+1}(1+propb_{k})+E_{k+1}))}{p_{x+k}}$$
+
+```{r, echo=FALSE}
+# Inicializar la función AssetShare
+funcInteres <- function(kTemp){
+  #kTemp solo puede ir de 0-24
+  resultado <- valoresObservados_tasaInteres$'Tasa de interés efectiva anual'[kTemp+1]
+  return(resultado)
+}
+primaPropCostos <- function(kTemp, prima){
+  if(kTemp==0){
+    resultado <- .6*prima
+  } else if(kTemp %in% c(1,2)){
+    resultado <- .8*prima}
+  else if(kTemp>=3 && kTemp<=mPrimas-1){
+    resultado <- .95*prima
+  } else {
+    resultado <- 0
+  }
+  return(resultado)
+}
+funcPrimaCostos <- function(kTemp, prima){
+  if(kTemp<=mPrimas-1){
+    resultado <- primaPropCostos(kTemp, prima)-valoresObservados_costosPromedios$'Costo Asociado a la Prima G'[kTemp+1]
+  } else {
+    resultado <- 0
+  }
+  return(resultado)
+}
+
+propLiquidacion <- function(kTemp){
+  #kTemp es >=1
+  #Se da vencidamente
+  if(kTemp>=1 && kTemp<=n){
+    resultado <- resultado <- 1.003*saMuerte
+  } else {
+    resultado <- 0
+  }
+ return(resultado)
+}
+
+funcMuerteCostos <- function(kTemp){
+  #kTemp es >=1
+  #Se da vencidamente
+  if(kTemp>=1 && kTemp<=n){
+    resultado <- propLiquidacion(kTemp)+valoresObservados_costosPromedios$'Costo Asociado a liquidación por Muerte'[kTemp+1]
+  } else {
+    resultado <- 0
+  }
+  return(resultado)
+}
+
+funcMortalidad <- function(kTemp){
+  #kTemp es >=0
+  resultado <- valoresObservados_qxPromedios$qx[kTemp+1]
+  return(resultado)
+  
+}
+
+assetShare <- function(kTemp, funcInteres, funcPrimaCostos, funcMuerteCostos,funcMortalidad, prima){
+  if(kTemp>=1 && kTemp<=n){
+    assetShareAnterior <- assetShare(kTemp-1, funcInteres, funcPrimaCostos, funcMuerteCostos,funcMortalidad, prima)
+
+    resultado <- ((assetShareAnterior+funcPrimaCostos(kTemp-1, primaRecargada))*(1+funcInteres(kTemp-1))-funcMortalidad(kTemp-1)*funcMuerteCostos(kTemp))/(1-funcMortalidad(kTemp-1))
+  }
+  else{
+    resultado <- 0
+  }
+  return(resultado)
+}
+
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+# Creamos los valores ASSETSHARE
+library(kableExtra)
+
+
+# Calcular los valores
+kTemp_valores <- 0:19
+assetShare_valores <- sapply(kTemp_valores, function(k) assetShare(k, funcInteres, funcPrimaCostos, funcMuerteCostos, funcMortalidad, primaRecargada))
+
+
+# Crear un data.frame con los resultados
+df <- data.frame(kTemp = kTemp_valores, assetShare = assetShare_valores)
+
+print(df)
+
+
+
+```
+
+
+
 ## 2. Estimación del Fondo Total mediante el Asset-share
 
 (Fórmula para el cálculo y valores obtenidos para toda la vigencia de la póliza)
+
+$$\actsymb[k]{\mathit{FT}}{}=\lx{x}[O] \actsymb[k]{\mathit{AS}}{}$$
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+# Creamos los valores del fondo
+
+# Calcular los valores
+
+kTemp_valores <- 0:19
+
+# Inicializa lx con un valor base de 100,000
+lx <- numeric(length(valoresObservados_qxPromedios$qx) + 1)
+lx[1] <- 100  # o el valor base que elijas
+
+# Calcula los valores lx utilizando la relación con qx
+for(i in 2:(length(lx))) {
+  lx[i] <- lx[i-1] * (1 - valoresObservados_qxPromedios$qx[i-1])
+}
+
+# Almacenar los valores lx en un dataframe
+df_lx <- data.frame(lx = lx)
+
+# Multiplicar assetShare por l_x+k
+df$fondo_total <- df$assetShare * df_lx$lx[(xEdad+1):(xEdad+n+1)]
+
+# Ver el resultado
+print(df)
+
+
+
+
+```
 
 # Análisis de Rentabilidad
 
@@ -859,10 +996,31 @@ kable(df_resumen, caption = "Promedio y desviación estándar de las 1000 realiz
 
 (Fórmula para el cálculo y valores obtenidos para toda la vigencia de la póliza)
 
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+utilidades <- (df$assetShare-tablaValoresPolizaAsociadosRecargada$Vx)*df_lx$lx[(xEdad+1):(xEdad+n+1)]
+
+# Crear un dataframe con el vector de utilidades
+
+df_utilidades <- data.frame(k = 0:(length(utilidades)-1), Utilidades = utilidades)
+
+# Crear una tabla con kable
+library(knitr)
+kable(df_utilidades, caption = "Utilidades por año", format = "latex", booktabs = TRUE)
+
+```
+
 ## 2. VPN
 
 (Fórmula para el cálculo y valor obtenido)
 
+```{r}
+
+```
+
 ## 3. MU
 
 (Fórmula para el cálculo y valor obtenido)
+
+```{r}
+
+```
