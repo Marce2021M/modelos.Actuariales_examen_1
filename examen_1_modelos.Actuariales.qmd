@@ -748,15 +748,106 @@ En el quinto escenario obviamente obtenemos MU=VPN=0
 
 #### c.1. Hipótesis para la simulación de las variables a analizar
 
+Elegiremos tasa de interés y tabla de mortalidad como las variables a analizar.
+
+Realizaremos simulaciones para la tasa de interés y la tabla de mortalidad, con la finalidad de obtener una distribución de los valores que pueden obtener VPN y MU conjuntamente.
+
+Para la tasa de interés, supondremos que sigue una distribución normal recortada en 0 con media de 7.5% y desviación estándar de 1.5%.
+
+Para la tabla de mortalidad, supondremos que la $\alpha$ de nuestro modelo Gamma sigue una distribución normal recortada en 0.
+
 #### c.2. Histograma de 1000 realizaciones de VPN y MU
 
+Procedemos a mostrar los histogramas de las 1000 realizaciones estocásticas sobre tasa de interés y tabla de mortalidad de VPN y MU.
+
+```{r, echo=FALSE}
+library(truncnorm) # necesitarás esta biblioteca para generar números de una distribución normal truncada
+
+# Simulación de la tasa de interés
+simulaciones_tasa_interes <- truncnorm::rtruncnorm(1000, a = 0, mean = 0.075, sd = 0.015) # Distribución normal truncada en 0
+
+# Simulación de alpha para la tabla de mortalidad
+simulaciones_alpha <- truncnorm::rtruncnorm(1000, a = 0, mean=8, sd = 1.5) # 
+
+#funciones auxiliares
+
+medidaVPNdf <- function(iTasaEstimada, tablaMortalidadEstimada){
+   #ktemo solo está entre 1 a n
+  iTasaEstimada <<- iTasaEstimada
+  tablaMortalidadEstimada <<- generate_mortality_table_gamma(tablaMortalidadEstimada)
+  resultado <- medidaVPN()
+  return(resultado)
+}
+
+medidaMUdf <- function(iTasaEstimada, tablaMortalidadEstimada){
+  iTasaEstimada <<- iTasaEstimada
+  tablaMortalidadEstimada <<- generate_mortality_table_gamma(tablaMortalidadEstimada)
+  resultado <- medidaMU()
+  return(resultado)
+}
+# Crear un dataframe con las simulaciones
+df_simulaciones <- data.frame(
+  TasaEstimada = simulaciones_tasa_interes,
+  AlphaEstimado = simulaciones_alpha
+)
+
+# Usar mutate para agregar las medidas VPN y MU al dataframe
+df_resultados <- df_simulaciones %>%
+  rowwise() %>%
+  mutate(
+    VPN = medidaVPNdf(TasaEstimada, AlphaEstimado),
+    MU = medidaMUdf(TasaEstimada, AlphaEstimado)
+  )
+
+# Histograma para VPN
+ggplot(df_resultados, aes(x=VPN)) + 
+  geom_histogram(fill="steelblue", color="black", bins=50, alpha=0.7) + 
+  labs(title="Histograma de VPN",
+       x="Valor de VPN",
+       y="Frecuencia") + 
+  theme_minimal()
+
+# Histograma para MU
+ggplot(df_resultados, aes(x=MU)) + 
+  geom_histogram(fill="steelblue", color="black", bins=50, alpha=0.7) + 
+  labs(title="Histograma de MU",
+       x="Valor de MU",
+       y="Frecuencia") + 
+  theme_minimal()
+
+```
+
 #### c.3. Promedio y desviación estándar de las 1000 realizaciones de VPN y MU
+
+Los promedios y desviación estándar son los siguientes:
+
+```{r, echo=FALSE}
+library(knitr)
+
+# Calcular el promedio y desviación estándar
+promedio_VPN <- mean(df_resultados$VPN)
+desviacion_VPN <- sd(df_resultados$VPN)
+
+promedio_MU <- mean(df_resultados$MU)
+desviacion_MU <- sd(df_resultados$MU)
+
+# Crear un dataframe con los resultados
+df_resumen <- data.frame(
+  Medida = c("VPN", "MU"),
+  Promedio = c(promedio_VPN, promedio_MU),
+  Desviacion_Estandar = c(desviacion_VPN, desviacion_MU)
+)
+
+# Imprimir la tabla en formato bonito
+kable(df_resumen, caption = "Promedio y desviación estándar de las 1000 realizaciones de VPN y MU", digits = 4)
+
+```
 
 # Para una cartera de 100 asegurados: Fondo Total
 
 ## 1. Asset-share
 
-(Fórmula para el cálculo y valores obtenidos para toda la vigencia de la póliza)
+(Fórmula para el cálculo y valores obtenidos para toda la vigencia de la póliza) 
 
 ## 2. Estimación del Fondo Total mediante el Asset-share
 
