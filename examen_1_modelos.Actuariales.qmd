@@ -998,7 +998,7 @@ utilidades <- (df$fondo_total/100-tablaValoresPolizaAsociadosRecargada$Vx)*(df_l
 df_utilidades <- data.frame(k = 0:(length(utilidades)-1), Utilidades = utilidades)
 
 # Crear una tabla con kable
-library(knitr)
+
 kable(df_utilidades, caption = "Utilidades por año", format = "latex", booktabs = TRUE)
 
 ```
