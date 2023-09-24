@@ -564,21 +564,15 @@ Con lo que con las hipótesis planteadas obtenemos un VPN de \$`r medidaVPN()`.
 $$MU(r) = \frac{VPN(r)}{\sum_{k=1}^{19}R_{k}v^{k}_{r}}$$
 
 ```{r, echo=F, results=F}
-# Cuidado con kTemp, está trasladado
-revenues <- function(kTemp){
-  resultado <- (gastoPropPrima(kTemp)*primaRecargada - gastoFijoPrima(kTemp) + tablaValoresPolizaAsociadosRecargada$Vx[kTemp])*(tablaMortalidadEstimada$lx[xEdad+kTemp]/tablaMortalidadEstimada$lx[xEdad+1])
-  return(resultado*100)
-}
 
 medidaMU <- function(rCC=.16){
   v <- 1/(1+rCC)
   resultado <- 0
-  for (kTemp in seq(1,n,1)){
-    resultado <- resultado + revenues(kTemp)*v^(kTemp-1)
+  for (kTemp in seq(1,mPrimas,1)){
+    resultado <- resultado + primaRecargada*v^(kTemp-1)
   }
-  return(medidaVPN()/resultado)
+  return(medidaVPN()/(resultado*100))
 }
-
 
 ```
 
@@ -997,7 +991,7 @@ print(df)
 (Fórmula para el cálculo y valores obtenidos para toda la vigencia de la póliza)
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
-utilidades <- (df$assetShare-tablaValoresPolizaAsociadosRecargada$Vx)*df_lx$lx[(xEdad+1):(xEdad+n+1)]
+utilidades <- (df$fondo_total/100-tablaValoresPolizaAsociadosRecargada$Vx)*(df_lx$lx[(xEdad+1):(xEdad+n+1)]/df_lx$lx[xEdad+1])
 
 # Crear un dataframe con el vector de utilidades
 
@@ -1013,14 +1007,34 @@ kable(df_utilidades, caption = "Utilidades por año", format = "latex", booktabs
 
 (Fórmula para el cálculo y valor obtenido)
 
-```{r}
-
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+medidaVPNFT <- function(rCC=.16){
+   #ktemo solo está entre 1 a n
+  v <- 1/(1+rCC)
+  resultado <- 0
+  for (kTemp in seq(1,n,1)){
+    resultado <- resultado + (df_utilidades$Utilidades[kTemp+1]*v^(kTemp))
+  }
+  return(resultado)
+}
 ```
+
+Con lo cual la medida de rentabilidad de VPN para este producto dado lo observado es de `r medidaVPNFT()`.
 
 ## 3. MU
 
 (Fórmula para el cálculo y valor obtenido)
 
-```{r}
-
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+# Cuidado con kTemp, está trasladado
+medidaMUFT <- function(rCC=.16){
+  v <- 1/(1+rCC)
+  resultado <- 0
+  for (kTemp in seq(1,mPrimas,1)){
+    resultado <- resultado + primaRecargada*v^(kTemp-1)
+  }
+  return(medidaVPNFT()/resultado)
+}
 ```
+
+Con lo cual la medida de rentabilidad de MU para este producto dado lo observado es de `r medidaMUFT()`.
