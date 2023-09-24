@@ -21,11 +21,6 @@ editor_options:
 
 
 ```{r, echo=FALSE, results=FALSE, warning=FALSE, message=FALSE}
-# Cargamos la libreria
-library(readxl)
-library(ggplot2)
-library(dplyr)
-library(tidyverse)
 
 # SUPUESTOS PRINCIPALES (INPUT)
 # 191654
@@ -48,41 +43,7 @@ saSupervivencia <- 1000000
 
 nCarteraAsegurados <- 100
 
-# Leemos la tabla de mortalidad
-tablaMortalidad <- read_excel("Tabla_mortalidad.xlsx")
-
-tablaMortalidad <- tablaMortalidad |> 
-  mutate(dx= c(tablaMortalidad$lx[1:(length(tablaMortalidad$lx)-1)]-tablaMortalidad$lx[2:length(tablaMortalidad$lx)],NA))
-
-qTablaMortalidadGraf <- data.frame(px = numeric(length(tablaMortalidad$lx)-xEdad), kSuperv = numeric(length(tablaMortalidad$lx)-xEdad))
-
-
-# Creamos la columna de supervivencia
-
-for(i in (xEdad+1):length(tablaMortalidad$lx)){
-  qTablaMortalidadGraf$px[i-xEdad] <- tablaMortalidad$lx[i]/tablaMortalidad$lx[xEdad+1] 
-  qTablaMortalidadGraf$kSuperv[i-xEdad] <- i-xEdad-1
-}
-
-
-######-------------------------------------
-#Regla de valores garantizados
-
-# Hacemos función de valores garantizados
-
-valoresGarantizados <- function(valorPoliza, kTemp){
-  #Estoy tomando kTemp de referencia para indicar el año en curso anticipadamente
-  if(kTemp %in% c(1,2)){
-    resultado <- valorPoliza*.8
-  }else if (kTemp >= 3 && kTemp <= mPrimas-1){
-    resultado <- valorPoliza*.9
-  } else {
-    resultado <- 0
-  }
-  return(resultado)
-}
-
-
+source(paste0(getwd(), "/paqueteMSRmodelos1.R"))
 ```
 
 # Nota Técnica
@@ -129,68 +90,6 @@ La tasa base será del `r itasaBase*100`%, porque actualmente existe la expectat
 
 ## 3. Procedimientos técnicos
 
-```{r echo=FALSE, results=FALSE}
-# Funciones útiles para los siguientes cálculos
-
-# Definición de más variables globales
-
-v <- 1/(1+itasaBase)
-
-# Cálculo de temporales
-
-temporal <- function(edad, vigencia){
-  resultado <- 0
-  for (k in seq(0, vigencia-1, 1)){
-    resultado <- resultado + v^(k+1)*(tablaMortalidad$dx[edad+k+1]/tablaMortalidad$lx[edad+1])
-  }
-  return(resultado)
-}
-
-anualidad <- function(edad, vigencia){
-  resultado <- 0
-  for (k in seq(0, vigencia-1, 1)){
-    resultado <- resultado + v^(k)*(tablaMortalidad$lx[edad+k+1]/tablaMortalidad$lx[edad+1])
-  }
-  return(resultado)
-}
-
-dotal <- function(edad, vigencia){
-  resultado <- v^(vigencia)*tablaMortalidad$lx[xEdad+vigencia+1]/tablaMortalidad$lx[xEdad+1]
-  return(resultado)
-}
-
-valorPoliza <- function(kTemp, prima){
-  resultado <- 0
-  if(kTemp %in% c(1,2,3,4)){
-    resultado <- (dotal(xEdad,kTemp)^(-1))*(prima*anualidad(xEdad,kTemp)-saMuerte*temporal(xEdad, kTemp))
-  } 
-  else if(kTemp >=5 && kTemp<=n){
-    resultado <- (dotal(xEdad,kTemp)^(-1))*(prima*anualidad(xEdad,4)-saMuerte*temporal(xEdad, kTemp))}
-  else{
-    resultado <- 0
-  }
-}
-
-valorPolizaRecargado <- function(kTemp, primaRecargada){
-  resultado <- 0
-  if(kTemp == 1){
-    resultado <- (dotal(xEdad,kTemp)^(-1))*(-1000+.6*primaRecargada-(3000+1.003*saMuerte)*temporal(xEdad, kTemp))
-  } 
-  else if(kTemp %in% c(2,3)){
-    resultado <- (dotal(xEdad,kTemp)^(-1))*(-1000+.6*primaRecargada+(-500+.8*primaRecargada)*(anualidad(xEdad, kTemp)-1)-(3000+1.003*saMuerte)*temporal(xEdad, kTemp))
-  }
-  else if(kTemp >=4 && kTemp<=n){
-    resultado <- (dotal(xEdad,kTemp)^(-1))*(-1000+.6*primaRecargada+(-500+.8*primaRecargada)*(anualidad(xEdad, 3)-1)+(-100+.95*primaRecargada)*anualidad(xEdad+3, mPrimas-3)*dotal(xEdad, 3)-(3000+1.003*saMuerte)*temporal(xEdad, kTemp))
-  }
-  else{
-    resultado <- 0
-  }
-  return (resultado)
-}
-
-
-```
-
 
 ### a. Prima neta
 
@@ -202,12 +101,7 @@ $$P=\frac{(`r saMuerte`)A_{`r xEdad`:\angl{`r n`}} +(`r saSupervivencia`) \Ex[`r
 
 $$=\frac{(`r saMuerte`)(\sum_{k=0}^{`r n-1`}v^{k+1}\frac{\dx{`r xEdad`+k}}{\lx{`r xEdad`}})+(`r saSupervivencia`) v^{`r n`}\frac{\lx{`r xEdad + n`}}{\lx{`r xEdad`}}}{\sum_{k=0}^{`r n-1`}v^{k}\frac{\lx{`r xEdad`+k}}{\lx{`r xEdad`}}}$$
 
-```{r echo=FALSE, results=FALSE}
-# Cálculo de la prima neta
 
-primaNeta <- (saMuerte*temporal(xEdad, n) + saSupervivencia*dotal(xEdad,n))/anualidad(xEdad, mPrimas)
-
-```
 
 Con lo cual el valor de la prima neta es de \$`r primaNeta`.
 
@@ -228,12 +122,6 @@ Es decir, tenemos que:
 $$G= \frac{(3000+(1.003)(SA_M))A_{\nthtop*{1}{`r xEdad`}:\angl{`r n`}} + (1000 + (1.001)(SA_S))\Ex[`r n`]{`r xEdad`}+1000+500((\ax**{`r xEdad`:\angl{3}}-1))+100(\ax**{`r xEdad+3`:\angl{`r mPrimas-3`}})(\Ex[3]{`r xEdad`})}{.6+.8(\ax**{`r xEdad`:\angl{3}}-1)+.95\ax**{`r xEdad+3`:\angl{`r mPrimas-3`}}(\Ex[3]{`r xEdad`})}$$
 
 
-
-```{r echo=FALSE, results=FALSE}
-# Cálculo de la prima recargada
-
-primaRecargada <- ((3000+1.003*saMuerte)*temporal(xEdad, n) + (1000+1.001*saSupervivencia)*dotal(xEdad,n) + 1000 + 500*(anualidad(xEdad, 3)-1) + 100*anualidad(xEdad+3, mPrimas-3)*dotal(xEdad, 3))/(.6+.8*(anualidad(xEdad, 3)-1)+.95*anualidad(xEdad+3, mPrimas-3)*dotal(xEdad, 3))
-```
 
 
 Con lo cual el valor de la prima recargada es de \$`r primaRecargada`.
@@ -386,90 +274,6 @@ tablaValoresGarantizadosRecargada
 
 ## 1. Análisis determinista
 
-```{r, echo=F, results=F}
-
-gastoPropPrima <- function(kTemp){
-  #Es el complemento del ejerccio por cómo está configurado
-  if(kTemp==1){
-    resultado <- .6
-  } else if(kTemp %in% c(2,3)){
-    resultado <- .8
-  }else if(kTemp>=4){
-    resultado <- .95
-  }
-  return(resultado)
-}
-gastoFijoPrima <- function(kTemp){
-    if(kTemp==1){
-    resultado <- 1000
-  } else if(kTemp %in% c(2,3)){
-    resultado <- 500
-  }else if(kTemp>=4){
-    resultado <- 100
-  }
-  return(resultado)
-}
-
-desembolsoProp <- function(salida="Muerte"){
-  if(salida =="Muerte"){
-    resultado <- 1.003
-  } else {
-    resultado <- 1.001
-  }
-  return(resultado)
-}
-desembolsoFijo <- function(salida="Muerte"){
-  if(salida =="Muerte"){
-    resultado <- 3000
-  } else {
-    resultado <- 1000
-  }
-  return(resultado)
-}
-
-
-flujos_utilidad <- function(kTemp){
-  #ktemo solo está entre 1 a n
-  if (kTemp %in% c(1,2,3,4)){
-    ingreso <- (gastoPropPrima(kTemp)*primaRecargada - gastoFijoPrima(kTemp) + tablaValoresPolizaAsociadosRecargada$Vx[kTemp])*(1+iTasaEstimada)*(tablaMortalidadEstimada$lx[xEdad+kTemp]/tablaMortalidadEstimada$lx[xEdad+1])
-    } 
-    else {
-    ingreso <- tablaValoresPolizaAsociadosRecargada$Vx[kTemp]*(1+iTasaEstimada)*(tablaMortalidadEstimada$lx[xEdad+kTemp]/tablaMortalidadEstimada$lx[xEdad+1])
-    }
-
-    egreso <-(desembolsoFijo()+desembolsoProp()*saMuerte)*(tablaMortalidadEstimada$dx[xEdad+kTemp]/tablaMortalidadEstimada$lx[xEdad+1])
-
-    reserva <- tablaValoresPolizaAsociadosRecargada$Vx[kTemp+1]*(tablaMortalidadEstimada$lx[xEdad+kTemp+1]/tablaMortalidadEstimada$lx[xEdad+1])
-
-    resultado <- 100*round(ingreso-egreso-reserva, digits = 9)
-    return(resultado)
-}
-
-#------ Tabla de Mortalidad Estimada
-generate_mortality_table_gamma <- function(alpha, start_age = 46, l_start = 10000, max_age = 101, beta = 1/4) {
-  # Vector de edades
-  ages <- start_age:max_age
-  
-  # Calcula la función de supervivencia gamma para cada edad
-  Sx <- 1 - pgamma(ages - start_age, shape = alpha, rate = beta)
-  
-  # Calcula lx basado en la función de supervivencia
-  lx <- l_start * Sx
-  
-  # Calcula dx
-  dx <- -c(diff(lx), NA) # Agregamos NA al final porque no hay dx para la última edad
-  
-  # Crear data.frame para la tabla de mortalidad
-  mortality_table <- data.frame(Age = ages, lx = lx, dx = dx)
-  
-  # Agregar filas con NA hasta el inicio
-  na_rows <- data.frame(Age = (0):(start_age-1), lx = rep(NA, start_age), dx = rep(NA, start_age))
-  mortality_table <- rbind(na_rows, mortality_table)
-  
-  return(mortality_table)
-}
-
-```
 
 ### a. Hipótesis demográficas y financieras
 
@@ -515,21 +319,6 @@ $Egreso_{k}$: es el egreso obtenido al final del año (por muertes).
 
 $Reserva_{k}$: es la reserva que se debe componer al final del año.
 
-```{r, echo=F, results=F}
-iTasaEstimada <- .075
-tablaMortalidadEstimada <- generate_mortality_table_gamma(8)
-
-medidaVPN <- function(rCC=.16, iTasa=iTasaEstimada, tabla_Mortalidad=tablaMortalidadEstimada){
-   #ktemo solo está entre 1 a n
-    v <- 1/(1+rCC)
-    resultado <- 0
-    for (kTemp in seq(1,n,1)){
-        resultado <- resultado + flujos_utilidad(kTemp, iTasa, tabla_Mortalidad)*v^(kTemp)
-    }
-    return(resultado)
-}
-
-```
 
 Con lo que con las hipótesis planteadas obtenemos un VPN de \$`r medidaVPN(iTasa=.075, tabla_Mortalidad=generate_mortality_table_gamma(8))`.
 
@@ -540,19 +329,7 @@ Con lo que con las hipótesis planteadas obtenemos un VPN de \$`r medidaVPN(iTas
 
 $$MU(r) = \frac{VPN(r)}{\sum_{k=1}^{19}R_{k}v^{k}_{r}}$$
 
-```{r, echo=F, results=F}
 
-
-medidaMU <- function(rCC=.16, iTasa=iTasaEstimada, tabla_Mortalidad=tablaMortalidadEstimada){
-  v <- 1/(1+rCC)
-  resultado <- 0
-  for (kTemp in seq(1,mPrimas,1)){
-    resultado <- resultado + primaRecargada*v^(kTemp-1)
-  }
-  return(medidaVPN(rCC, iTasaEstimada, tablaMortalidadEstimada)/(resultado*100))
-}
-
-```
 
 Con lo cual obtenemos un MU de `r medidaMU(iTasa=.075, tabla_Mortalidad=generate_mortality_table_gamma(8))`.
 
