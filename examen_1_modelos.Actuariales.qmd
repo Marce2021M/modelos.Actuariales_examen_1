@@ -1,8 +1,8 @@
 ---
-title: "Modelos Actuariales"
-subtitle: "Actuarial 3"
+title: "NOTA TÉCNICA: Seguro dotal mixto"
+subtitle: "Modelos Actuariales"
 lang: es
-author: "Marcelino Sánchez"
+author: "Marcelino Sánchez Rodríguez 191654"
 date: today
 format:
   html:
@@ -27,20 +27,20 @@ editor_options:
 
 # edad del asegurado
 xEdad <- 16+30
-xEdad <- 30
+
 
 #vigencia del seguro
 n <- 19
-n <- 8
+
 
 #tasa de interes efectiva anual
 itasaBase <- .05
-itasaBase <- .07
+
 
 
 #numero de primas anuales
 mPrimas <- 4
-mPrimas <- 3
+
 
 # Sumas aseguradas
 saMuerte <- 2000000
@@ -320,12 +320,13 @@ Es decir $F_{k} = Ingreso_{k}(1+i^{*}) - Egreso_{k} - Reserva_{k}$
 
 Donde 
 
-$Ingreso_{k}(1+i^{*})$: es el ingreso (menos gatos) y la reserva obtenidas al inicio del año y traídas a valor futuro que corresponde al final del año con la tasa de costo de capital.(CHECAR)
+$Ingreso_{k}(1+i^{*})$: es el ingreso por primas (menos gatos) y la reserva obtenida al inicio del año y traídas a valor futuro (con la tasa de inversión) que corresponde al final del año en curso con la tasa de costo de capital.(CHECAR)
 
-$Egreso_{k}$: es el egreso obtenido al final del año (por muertes).
+$Egreso_{k}$: es el egreso obtenido al final del año (por liquidaciones de muertes y costos asociados).
 
 $Reserva_{k}$: es la reserva que se debe componer al final del año.
 
+$v$ es el factor de descuento que se obtiene de la tasa de costo de capital el cual suponemos que es del 16%.
 
 Con lo que con las hipótesis planteadas obtenemos un VPN de \$`r medidaVPN(iTasa=.075, tabla_Mortalidad=generate_mortality_table_gamma(8))`.
 
@@ -336,7 +337,7 @@ Con lo que con las hipótesis planteadas obtenemos un VPN de \$`r medidaVPN(iTas
 
 $$MU(r) = \frac{VPN(r)}{\sum_{k=1}^{19}R_{k}v^{k}_{r}}$$
 
-
+Donde $R_{k}$ representa la prima recargada que se cobró al inicio del año y se trae a valor presente con la tasa de costo de capital. 
 
 Con lo cual obtenemos un MU de `r medidaMU(iTasa=.075, tabla_Mortalidad=generate_mortality_table_gamma(8))`.
 
@@ -391,6 +392,8 @@ ggplot() +
 
 ```
 
+Con lo cual nos damos cuenta que nuestro producto en las medidas de MU y VPN es linealmente sensible a la tasa de interés y presenta una correlación positiva con respecto a la misma. También nos damos cuenta que a partir de una tasa menor al 4% el producto deja de ser rentable.
+
 Ahora variaremos la tabla de mortalidad cambiando los valores del parámetro $\alpha$. El efecto de estos cambios en la tabla se ven de esta forma:
 
 ```{r, echo=F, results=F}
@@ -412,6 +415,8 @@ ggplot(df, aes(x=x, y=y, color=alpha)) +
        color = "Valor de Alpha") +
   theme_minimal()
 ```
+
+Es decir, entre más grande la $\alpha$ se presenta una mayor expectativa de supervivencia y por lo tanto un mayor valor en la función de supervivencia. Además, con una $\alpha$ más grande, las defunciones son menos abruptas.
 
 Y con lo cual los cambios en VPN y MU se ven gráficamente de la siguiente forma:
 
@@ -447,7 +452,7 @@ ggplot() +
 
 ```
 
-
+Es decir, entre más grande la $\alpha$ se presenta una mayor expectativa de supervivencia y  por lo tanto se tiene una mayor rentabilidad entre nuestro producto mixto. Con lo cual en este producto hay que tener cuidado si se presentan muchas defunciones.
 
 ### b. Análisis por escenarios para el VPN y MU
 
@@ -459,7 +464,7 @@ Los escenarios serán los siguientes:
 
 # Descripción detallada de los escenarios:
 1. Escenario 1 (Pesimista): Tasa de interés del 3% y tabla de mortalidad con alfa=4.
-2. Escenario 2 (Conservador): Tasa de interés del 5% y tabla de mortalidad con alfa=6.5.
+2. Escenario 2 (Conservador): Tasa de interés del 5% y tabla de mortalidad con alfa=6.
 3. Escenario 3 (Estimado): Tasa de interés del 7.5% y tabla de mortalidad con alfa=8.
 4. Escenario 4 (Optimista): Tasa de interés del 10% y tabla de mortalidad con alfa=9.
 5.- Escenario 5 (Base): Tasa de interés del  5%  y tabla de mortalidad base con la que calculamos las reservas.
@@ -472,7 +477,7 @@ medidasEscenarios <- c("VPN", "MU")
 
 rangoEscenariosTasa <- c(.03, .05, .075, .1)
 
-rangoEscenariosMortalidad <- c(4, 6.5, 8, 9)
+rangoEscenariosMortalidad <- c(4, 6, 8, 9)
 
 # Crear una matriz con NA (puedes reemplazar NA con cualquier otro valor inicial si lo prefieres)
 wide_matrix <- matrix(NA, nrow = length(escenarios), ncol = length(medidasEscenarios), dimnames = list(escenarios, medidasEscenarios))
@@ -494,6 +499,8 @@ print(wide_matrix)
 ```
 
 En el quinto escenario obviamente obtenemos MU=VPN=0
+
+Con lo cual notamos que debemos tener cuidado cuando hay muchas defunciones y tasas de interés más bajas que la tasa base.
 
 ### c. Análisis por simulación
 
@@ -520,7 +527,7 @@ set.seed(191654)
 simulaciones_tasa_interes <- truncnorm::rtruncnorm(1000, a = 0, mean = 0.075, sd = 0.015) # Distribución normal truncada en 0
 
 # Simulación de alpha para la tabla de mortalidad
-simulaciones_alpha <- truncnorm::rtruncnorm(1000, a = 0, mean=8, sd = 1.5) # 
+simulaciones_alpha <- truncnorm::rtruncnorm(1000, a = 0, mean=7, sd = 1.5) # 
 
 #funciones auxiliares
 
@@ -596,6 +603,9 @@ kable(df_resumen, caption = "Promedio y desviación estándar de las 1000 realiz
 
 ```
 
+Es decir, si en general suponiendo que la mayoría de las tasas de intérés se encuentran en el rango de 6% a 9% y que la mayoría de las $\alpha$ se encuentran en el rango de 6.5 a 8.5, entonces podemos esperar que el VPN y la MU lleguen a ser rentables, aunque igual hay que estar muy pendientes ante bajas en la tasa de interés y muchas defunciones de las esperadas, porque se puede apreciar que el VPN y la MU son muy sensibles a estos cambios, y que hay riesgo de que no sea rentable el producto con una confianza del `r sum(df_resultados$MU<=0)/10`%.
+
+
 # Para una cartera de 100 asegurados: Fondo Total
 
 
@@ -603,86 +613,14 @@ kable(df_resumen, caption = "Promedio y desviación estándar de las 1000 realiz
 
 (Fórmula para el cálculo y valores obtenidos para toda la vigencia de la póliza) 
 
-Utilizaremos la fórmula recursiva para calcular el Asset-share:
+Utilizaremos la fórmula recursiva para calcular el Asset-share, contando con los valores observados de tasa de interés, mortalidad promedio, costos asociados a la prima de emisión y renovación promedio, y por último los costos asociados a la liquidación por muerte promedio.
 
-$$\actsymb[k+1]{\mathit{AS}}{}=\frac{[\actsymb[k]{\mathit{AS}}{}+G_{k}(1-c_{k})-e_{k}](1+i_{k,k+1})-q_{x+k}(b_{k+1}(1+propb_{k})+E_{k+1}))}{p_{x+k}}$$
+$$\actsymb[k+1]{\mathit{AS}}{}=\frac{[\actsymb[k]{\mathit{AS}}{}+G_{k}(1-c_{k}^{o})-e_{k}^{o}](1+i_{k,k+1}^{o})-q_{x+k}^{o}(b_{k+1}(1+propb_{k}^{o})+E_{k+1}^{o}))}{p_{x+k}^{o}}$$
 
-```{r, echo=FALSE}
-# Inicializar la función AssetShare
-funcInteres <- function(kTemp){
-  #kTemp solo puede ir de 0-24
-  resultado <- valoresObservados_tasaInteres$'Tasa de interés efectiva anual'[kTemp+1]
-  return(resultado)
-}
-primaPropCostos <- function(kTemp, prima){
-  if(kTemp==0){
-    resultado <- .6*prima
-  } else if(kTemp %in% c(1,2)){
-    resultado <- .8*prima}
-  else if(kTemp>=3 && kTemp<=mPrimas-1){
-    resultado <- .95*prima
-  } else {
-    resultado <- 0
-  }
-  return(resultado)
-}
-funcPrimaCostos <- function(kTemp, prima){
-  if(kTemp<=mPrimas-1){
-    resultado <- primaPropCostos(kTemp, prima)-valoresObservados_costosPromedios$'Costo Asociado a la Prima G'[kTemp+1]
-  } else {
-    resultado <- 0
-  }
-  return(resultado)
-}
-
-propLiquidacion <- function(kTemp){
-  #kTemp es >=1
-  #Se da vencidamente
-  if(kTemp>=1 && kTemp<=n){
-    resultado <- resultado <- 1.003*saMuerte
-  } else {
-    resultado <- 0
-  }
- return(resultado)
-}
-
-funcMuerteCostos <- function(kTemp){
-  #kTemp es >=1
-  #Se da vencidamente
-  if(kTemp>=1 && kTemp<=n){
-    resultado <- propLiquidacion(kTemp)+valoresObservados_costosPromedios$'Costo Asociado a liquidación por Muerte'[kTemp+1]
-  } else {
-    resultado <- 0
-  }
-  return(resultado)
-}
-
-funcMortalidad <- function(kTemp){
-  #kTemp es >=0
-  resultado <- valoresObservados_qxPromedios$qx[xEdad+kTemp+1]
-  return(resultado)
-  
-}
-
-assetShare <- function(kTemp, funcInteres, funcPrimaCostos, funcMuerteCostos,funcMortalidad, prima){
-  if(kTemp>=1 && kTemp<=n){
-    assetShareAnterior <- assetShare(kTemp-1, funcInteres, funcPrimaCostos, funcMuerteCostos,funcMortalidad, prima)
-
-    resultado <- ((assetShareAnterior+funcPrimaCostos(kTemp-1, primaRecargada))*(1+funcInteres(kTemp-1))-funcMortalidad(kTemp-1)*funcMuerteCostos(kTemp))/(1-funcMortalidad(kTemp-1))
-  }
-  else{
-    resultado <- 0
-  }
-  return(resultado)
-}
-
-```
+Con lo cual los valores de Asset-share para toda la vigencia de la póliza son los siguientes:
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 # Creamos los valores ASSETSHARE
-library(kableExtra)
-
-
 # Calcular los valores
 kTemp_valores <- 0:19
 assetShare_valores <- sapply(kTemp_valores, function(k) assetShare(k, funcInteres, funcPrimaCostos, funcMuerteCostos, funcMortalidad, primaRecargada))
@@ -703,7 +641,11 @@ print(df)
 
 (Fórmula para el cálculo y valores obtenidos para toda la vigencia de la póliza)
 
-$$\actsymb[k]{\mathit{FT}}{}=\lx{x}[O] \actsymb[k]{\mathit{AS}}{}$$
+Utilizaremos la siguiente fórmula para calcular el Fondo Total, suponiendo que conocemos exactamente cúantos asegurados tenemos en cada año:
+
+$$\actsymb[k+1]{\mathit{AS}}{}=\frac{[\actsymb[k]{\mathit{AS}}{}+G_{k}(1-c_{k}^{o})-e_{k}^{o}](1+i_{k,k+1}^{o})-q_{x+k}^{o}(b_{k+1}(1+propb_{k}^{o})+E_{k+1}^{o}))}{p_{x+k}^{o}}$$
+
+$$\actsymb[k]{\mathit{FT}}{}=\lx{x+k}[o] \actsymb[k]{\mathit{AS}}{}$$
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 # Creamos los valores del fondo
@@ -713,25 +655,22 @@ $$\actsymb[k]{\mathit{FT}}{}=\lx{x}[O] \actsymb[k]{\mathit{AS}}{}$$
 kTemp_valores <- 0:19
 
 # Inicializa lx con un valor base de 100,000
-lx <- numeric(length(valoresObservados_qxPromedios$qx) + 1)
+lx <- numeric(n+1)
 lx[1] <- 100  # o el valor base que elijas
 
 # Calcula los valores lx utilizando la relación con qx
 for(i in 2:(length(lx))) {
-  lx[i] <- lx[i-1] * (1 - valoresObservados_qxPromedios$qx[i-1])
+  lx[i] <- lx[i-1] - tabla_mortalidad$dx[i-1]
 }
 
 # Almacenar los valores lx en un dataframe
 df_lx <- data.frame(lx = lx)
 
 # Multiplicar assetShare por l_x+k
-df$fondo_total <- df$assetShare * df_lx$lx[(xEdad+1):(xEdad+n+1)]
+df$fondo_total <- df$assetShare * df_lx$lx
 
 # Ver el resultado
 print(df)
-
-
-
 
 ```
 
@@ -741,18 +680,35 @@ print(df)
 
 (Fórmula para el cálculo y valores obtenidos para toda la vigencia de la póliza)
 
+Calcularemos el fondo total de lo que estimamos que tenemos como si calcularamos el Asset-Share con lo que ocurrió realmente en cuanto a muertes, utilizamos los demás supuestos promedios observados, y además siempre topamos o completamos el Asset-Share con el valor que debemos tener de la póliza recargada.
+
+$$\actsymb[k+1]{\mathit{AS}^{*}}{}=\frac{[\actsymb[k]{\mathit{AS}^{*}}{}+G_{k}(1-c_{k}^{o})-e_{k}^{o}](1+i_{k,k+1}^{o})-q_{x+k}^{o}(b_{k+1}(1+propb_{k}^{o})+E_{k+1}^{o}))}{p_{x+k}^{o}}$$
+$$\actsymb[k]{\mathit{FT}}{}=\lx{x+k}[o] \actsymb[k]{\mathit{AS}^{*}}{}$$
+
+
+
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
-utilidades <- (df$fondo_total/100-tablaValoresPolizaAsociadosRecargada$Vx)*(df_lx$lx[(xEdad+1):(xEdad+n+1)]/df_lx$lx[xEdad+1])
+# Calcular los valores
+kTemp_valores <- 0:19
+assetShare_valores <- sapply(kTemp_valores, function(k) assetShare2(k, funcInteres, funcPrimaCostos, funcMuerteCostos, funcMortalidad2, primaRecargada))
+
+
+# Crear un data.frame con los resultados
+df <- data.frame(kTemp = kTemp_valores, assetShareEstrella = assetShare_valores)
+
+df$fondo_total <- df$assetShareEstrella * df_lx$lx
+
+utilidades <- (df$fondo_total-(tablaValoresPolizaAsociadosRecargada$Vx)*df_lx$lx)/100
 
 # Crear un dataframe con el vector de utilidades
 
 df_utilidades <- data.frame(k = 0:(length(utilidades)-1), Utilidades = utilidades)
 
-# Crear una tabla con kable
-
-kable(df_utilidades, caption = "Utilidades por año", format = "latex", booktabs = TRUE)
+print(df_utilidades)
 
 ```
+
+Es decir, nuestro producto parece no ser rentable la mayor parte del tiempo. Por lo que realizaremos medidas para determinar si es rentable o no.
 
 ## 2. VPN
 
@@ -789,3 +745,27 @@ medidaMUFT <- function(rCC=.16){
 ```
 
 Con lo cual la medida de rentabilidad de MU para este producto dado lo observado es de `r medidaMUFT()`.
+
+En conclusión, el producto no fue rentable, ya que la medida de rentabilidad de MU fue negativa. Esto se debió principalmente a la mayor cantidad de defunciones que no se esperaban. Y como se advirtió en el análisis de stress-testing, el producto es muy sensible a las defunciones y había que tenerse cuidado porque había cierto riesgo probable de que no fuera rentable. 
+
+Solo para ilustrar este efecto mostraremos el cambio de la mortalidad con la siguiente gráfica, el cual lineal y terminó de desarrollar más pérdidas que utilidades:
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+
+# Crear gráfica
+ggplot(data = tabla_mortalidad, aes(x = x, y = lx)) +
+  geom_line() + 
+  labs(title = "Función de supervivencia lx", 
+       x = "Edad x", 
+       y = "Número de supervivientes lx") + 
+  theme_minimal()
+
+```
+
+# Referencias
+
+Sánchez, Marcelino, (2023). Notas de la clase de modelos actuariales con la profesora María Mercedes Gregorio Domínguez. Instituto Tecnológico Autónomo de México (ITAM).
+
+Código en R del documento:
+
+Sánchez, Marcelino, (2023). modelos.Actuariales_examen_1. GitHub. https://github.com/Marce2021M/modelos.Actuariales_examen_1

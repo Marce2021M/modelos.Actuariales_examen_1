@@ -299,12 +299,12 @@ for (k in 0:max(valoresObservados_carteraObservados$'K(x)')) {
 # Crear el dataframe final de lx y dx
 tabla_mortalidad <- data.frame(x = 0:max(valoresObservados_carteraObservados$'K(x)'), lx = lx, dx = -c(diff(lx), NA))
 
-# Calcular qx
+# Calcular qx+k
 tabla_mortalidad$qx <- tabla_mortalidad$dx / tabla_mortalidad$lx
 
 funcMortalidad2 <- function(kTemp){
   #kTemp es >=0
-  resultado <- tabla_mortalidad$qx[xEdad+kTemp+1]
+  resultado <- tabla_mortalidad$qx[kTemp+1]
   return(resultado)
   
 }
@@ -323,3 +323,15 @@ assetShare <- function(kTemp, funcInteres, funcPrimaCostos, funcMuerteCostos,fun
   return(resultado)
 }
 
+
+assetShare2 <- function(kTemp, funcInteres, funcPrimaCostos, funcMuerteCostos,funcMortalidad, prima){
+  if(kTemp>=1 && kTemp<=n){
+    assetShareAnterior <- tablaValoresPolizaAsociadosRecargada$Vx[kTemp]
+
+    resultado <- ((assetShareAnterior+funcPrimaCostos(kTemp-1, primaRecargada))*(1+funcInteres(kTemp-1))-funcMortalidad(kTemp-1)*funcMuerteCostos(kTemp))/(1-funcMortalidad(kTemp-1))
+  }
+  else{
+    resultado <- 0
+  }
+  return(resultado)
+}
