@@ -685,7 +685,9 @@ Calcularemos el fondo total de lo que estimamos que tenemos como si calcularamos
 $$\actsymb[k+1]{\mathit{AS}^{*}}{}=\frac{[\actsymb[k]{\mathit{AS}^{*}}{}+G_{k}(1-c_{k}^{o})-e_{k}^{o}](1+i_{k,k+1}^{o})-q_{x+k}^{o}(b_{k+1}(1+propb_{k}^{o})+E_{k+1}^{o}))}{p_{x+k}^{o}}$$
 $$\actsymb[k]{\mathit{FT}}{}=\lx{x+k}[o] \actsymb[k]{\mathit{AS}^{*}}{}$$
 
+Una vez que tenemos el valor del fondo total, calculamos las utilidades como la diferencia entre el fondo total y el valor de la póliza recargada en los mismos tiempos k; y al final lo diviremos entre 100 para tener un valor comparativvo per cápita.
 
+$$U_{k}=(\actsymb[k]{\mathit{FT}}{}-\Vx[k]{`r xEdad`: \angl{`r n`}})/100$$
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 # Calcular los valores
@@ -748,7 +750,7 @@ Con lo cual la medida de rentabilidad de MU para este producto dado lo observado
 
 En conclusión, el producto no fue rentable, ya que la medida de rentabilidad de MU fue negativa. Esto se debió principalmente a la mayor cantidad de defunciones que no se esperaban. Y como se advirtió en el análisis de stress-testing, el producto es muy sensible a las defunciones y había que tenerse cuidado porque había cierto riesgo probable de que no fuera rentable. 
 
-Solo para ilustrar este efecto mostraremos el cambio de la mortalidad con la siguiente gráfica, el cual lineal y terminó de desarrollar más pérdidas que utilidades:
+Solo para ilustrar este efecto mostraremos el cambio de la mortalidad con la siguiente gráfica, el cual es lineal y terminó de desarrollar más pérdidas que utilidades:
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 
