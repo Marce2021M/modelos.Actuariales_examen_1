@@ -19,18 +19,18 @@ editor_options:
   chunk_output_type: console
 ---
 
-
 ```{r, echo=FALSE, results=FALSE, warning=FALSE, message=FALSE}
 
 # SUPUESTOS PRINCIPALES (INPUT)
 # 191654
 
 # edad del asegurado
-xEdad <- 16+30
+xEdad <- 46
 
 
 #vigencia del seguro
 n <- 19
+
 
 
 #tasa de interes efectiva anual
@@ -97,7 +97,6 @@ La tasa base será del `r itasaBase*100`%, porque actualmente existe la expectat
 
 ## 3. Procedimientos técnicos
 
-
 ### a. Prima neta
 
 (Fórmula para el cálculo y valor obtenido)
@@ -107,8 +106,6 @@ La prima neta está dada por la siguiente fórmula:
 $$P=\frac{(`r saMuerte`)A_{`r xEdad`:\angl{`r n`}} +(`r saSupervivencia`) \Ex[`r n`]{`r xEdad`} }{\ddot{a}_{`r xEdad`:\angl{`r mPrimas`}}}$$
 
 $$=\frac{(`r saMuerte`)(\sum_{k=0}^{`r n-1`}v^{k+1}\frac{\dx{`r xEdad`+k}}{\lx{`r xEdad`}})+(`r saSupervivencia`) v^{`r n`}\frac{\lx{`r xEdad + n`}}{\lx{`r xEdad`}}}{\sum_{k=0}^{`r n-1`}v^{k}\frac{\lx{`r xEdad`+k}}{\lx{`r xEdad`}}}$$
-
-
 
 Con lo cual el valor de la prima neta es de \$`r primaNeta`.
 
@@ -122,14 +119,9 @@ $$(3000+(1.003)(SA_M))A_{\nthtop*{1}{`r xEdad`}:\angl{`r n`}} + (1000 + (1.001)(
 
 $$-1000+.6G+(-500+.8G)(\ax**{`r xEdad`:\angl{3}}-1)+(-100+.95G)\ax**{`r xEdad+3`:\angl{`r mPrimas-3`}}(\Ex[3]{`r xEdad`})$$
 
-
-
 Es decir, tenemos que:
 
 $$G= \frac{(3000+(1.003)(SA_M))A_{\nthtop*{1}{`r xEdad`}:\angl{`r n`}} + (1000 + (1.001)(SA_S))\Ex[`r n`]{`r xEdad`}+1000+500((\ax**{`r xEdad`:\angl{3}}-1))+100(\ax**{`r xEdad+3`:\angl{`r mPrimas-3`}})(\Ex[3]{`r xEdad`})}{.6+.8(\ax**{`r xEdad`:\angl{3}}-1)+.95\ax**{`r xEdad+3`:\angl{`r mPrimas-3`}}(\Ex[3]{`r xEdad`})}$$
-
-
-
 
 Con lo cual el valor de la prima recargada es de \$`r primaRecargada`.
 
@@ -139,13 +131,9 @@ Con lo cual el valor de la prima recargada es de \$`r primaRecargada`.
 
 Las fórmulas teóricas son las siguientes, pero para efectos prácticos las calcularemos con la fórmula recursiva de Fackler.
 
-Para $k=0,...,mPrimas-1$
-$$\Vx[k]{`r xEdad`: \angl{`r n`}}= \frac{1}{\Ex[k]{`r xEdad`}}(P\ax**{`r xEdad`:\angl{k}}-(SA_M)A_{\nthtop*{1}{`r xEdad`}:\angl{k}})$$
+Para $k=0,...,mPrimas-1$ $$\Vx[k]{`r xEdad`: \angl{`r n`}}= \frac{1}{\Ex[k]{`r xEdad`}}(P\ax**{`r xEdad`:\angl{k}}-(SA_M)A_{\nthtop*{1}{`r xEdad`}:\angl{k}})$$
 
-Para $k=mPrimas,...,`r n`$
-$$\Vx[k]{`r xEdad`: \angl{`r n`}}= \frac{1}{\Ex[k]{`r xEdad`}}(P\ax**{`r xEdad`:\angl{4}}-(SA_M)A_{\nthtop*{1}{`r xEdad`}:\angl{k}})$$
-
-
+Para $k=mPrimas,...,`r n`$ $$\Vx[k]{`r xEdad`: \angl{`r n`}}= \frac{1}{\Ex[k]{`r xEdad`}}(P\ax**{`r xEdad`:\angl{4}}-(SA_M)A_{\nthtop*{1}{`r xEdad`}:\angl{k}})$$
 
 ```{r echo=FALSE}
 # Cálculo de valores póliza asociados
@@ -175,7 +163,6 @@ ggplot(tablaValoresPolizaAsociados, aes(x = k, y = Vx)) +
 
 ```
 
-
 ### d. Valores póliza asociados a la prima recargada
 
 (Fórmula para el cálculo y valores obtenidos para toda la vigencia de la póliza)
@@ -194,12 +181,9 @@ Para $k=2,3$
 
 $$\Vx[k]{`r xEdad`: \angl{`r n`}}= \frac{1}{\Ex[k]{`r xEdad`}}(-1000+.6G+(-500+.8G)(\ax**{`r xEdad`:\angl{k}}-1)-(3000+1.003SA_M)A_{\nthtop*{1}{`r xEdad`}:\angl{k}})$$
 
+Para $k=4,...,`r n`$
 
-Para $k=4,...,`r n`$ 
-
-$$\Vx[k]{`r xEdad`: \angl{`r n`}}= \frac{1}{\Ex[k]{`r xEdad`}}(-1000+.6G+(-500+.8G)(\ax**{`r xEdad`:\angl{3}}-1)+(-100+.95G)(\ax**{`r xEdad+3`:\angl{`r mPrimas-3`}})(\Ex[3]{`r xEdad`})$$
-$$-(3000+1.003SA_M)A_{\nthtop*{1}{`r xEdad`}:\angl{k}})$$
-
+$$\Vx[k]{`r xEdad`: \angl{`r n`}}= \frac{1}{\Ex[k]{`r xEdad`}}(-1000+.6G+(-500+.8G)(\ax**{`r xEdad`:\angl{3}}-1)+(-100+.95G)(\ax**{`r xEdad+3`:\angl{`r mPrimas-3`}})(\Ex[3]{`r xEdad`})$$ $$-(3000+1.003SA_M)A_{\nthtop*{1}{`r xEdad`}:\angl{k}})$$
 
 ```{r echo=FALSE}
 
@@ -228,13 +212,11 @@ ggplot(tablaValoresPolizaAsociadosRecargada, aes(x = k, y = Vx)) +
 
 ```
 
-
 ### e. Valores garantizados
 
 (Fórmula para el cálculo y valores obtenidos mientras haya pago de primas)
 
 Calculado retrospectivamente obtenemos la siguiente fórmula:
-
 
 Los valores garantizados para la prima neta son:
 
@@ -255,7 +237,6 @@ for (k in seq(1, 3, 1)){
 tablaValoresGarantizados
 
 ```
-
 
 Los valores garantizados para la prima recargada son:
 
@@ -281,14 +262,13 @@ tablaValoresGarantizadosRecargada
 
 ## 1. Análisis determinista
 
-
 ### a. Hipótesis demográficas y financieras
 
 (Elige las variables a analizar, mínimo 2, y los supuestos realistas que vas a utilizar)
 
-Vamos a analizar las variables de tasa de interés y de tabla de mortalidad y sus efectos en las medidas de VPN y MU. 
+Vamos a analizar las variables de tasa de interés y de tabla de mortalidad y sus efectos en las medidas de VPN y MU.
 
-Nuestro mejor estimador de estas variables es que la tasa de interés con la que traeremos a valor presente todos los flujos será de 7.5%, porque se espera que las tasas  de interés bajen paulatinamente y considerando que actualmente nos encontramos con tasas altísimas del 11% aproximadamente.
+Nuestro mejor estimador de estas variables es que la tasa de interés con la que traeremos a valor presente todos los flujos será de 7.5%, porque se espera que las tasas de interés bajen paulatinamente y considerando que actualmente nos encontramos con tasas altísimas del 11% aproximadamente.
 
 Así mismo consideramos que la tabla de mortalidad será una $Gamma(8, 1/4)$, esto porque suponemos que la tala de mortalidad se comporta como una normal y queremos además modelar mayores sobrevivientes que llegan a tener 100 años.
 
@@ -314,30 +294,33 @@ ggplot(data = tablaMortalidadEstimada, aes(x = Age, y = lx/10000)) +
 
 $$VPN(r) = \sum_{k=1}^{19}F_{k}v^{k}_{r}$$
 
-donde $F_{k}$ representa los flujos vencidos de cada año (solo durante ese año) hasta la vigencia, tomando en cuenta el final de la vigencia. 
+donde $F_{k}$ representa los flujos vencidos de cada año (solo durante ese año) hasta la vigencia, tomando en cuenta el final de la vigencia.
 
 Es decir $F_{k} = Ingreso_{k}(1+i^{*}) - Egreso_{k} - Reserva_{k}$
 
-Donde 
+Donde
 
-$Ingreso_{k}(1+i^{*})$: es el ingreso por primas (menos gatos) y la reserva obtenida al inicio del año y traídas a valor futuro (con la tasa de inversión) que corresponde al final del año en curso con la tasa de costo de capital.(CHECAR)
+$Ingreso_{k}(1+i^{*})$: es el ingreso actuarial por primas (menos gatos) y la reserva obtenida al inicio del año y traídas a valor futuro (con la tasa de inversión) que corresponde al final del año en curso con la tasa de costo de capital.
 
-$Egreso_{k}$: es el egreso obtenido al final del año (por liquidaciones de muertes y costos asociados).
+$$\frac{[\actsymb[k]{\mathit{V}}{}+G_{k}(1-c_{k})-e_{k}](1+i_{k,k+1})-q_{x+k}(b_{k+1}(1-propb_{k+1})+E_{k+1}))}{p_{x+k}}(100)$$
 
-$Reserva_{k}$: es la reserva que se debe componer al final del año.
+$Egreso_{k}$: es el egreso actuarial obtenido al final del año (por liquidaciones de muertes y costos asociados): 
+
+$$\frac{q_{x+k}(b_{k+1}(1-propb_{k+1})+E_{k+1}))}{p_{x+k}}(100)$$
+
+$Reserva_{k}$: es la reserva actuarial que se debe componer al final del año multiplicada por $100p_{x+k}$.
 
 $v$ es el factor de descuento que se obtiene de la tasa de costo de capital el cual suponemos que es del 16%.
 
 Con lo que con las hipótesis planteadas obtenemos un VPN de \$`r medidaVPN(iTasa=.075, tabla_Mortalidad=generate_mortality_table_gamma(8))`.
 
-
 ### c. Margen de Utilidad (MU)
 
 (Fórmula para el cálculo y valor obtenido)
 
-$$MU(r) = \frac{VPN(r)}{\sum_{k=1}^{19}R_{k}v^{k}_{r}}$$
+$$MU(r) = \frac{VPN(r)}{100P^{G}\ddot{a}_{`r xEdad`:\angl{`r mPrimas`}_{CC}}}$$
 
-Donde $R_{k}$ representa la prima recargada que se cobró al inicio del año y se trae a valor presente con la tasa de costo de capital. 
+Donde $P^{G}$ representa la prima recargada que se cobró al inicio del año, se trae a valor presente con la tasa de costo de capital, y se calcula con la mortalidad base.
 
 Con lo cual obtenemos un MU de `r medidaMU(iTasa=.075, tabla_Mortalidad=generate_mortality_table_gamma(8))`.
 
@@ -452,7 +435,7 @@ ggplot() +
 
 ```
 
-Es decir, entre más grande la $\alpha$ se presenta una mayor expectativa de supervivencia y  por lo tanto se tiene una mayor rentabilidad entre nuestro producto mixto. Con lo cual en este producto hay que tener cuidado si se presentan muchas defunciones.
+Es decir, entre más grande la $\alpha$ se presenta una mayor expectativa de supervivencia y por lo tanto se tiene una mayor rentabilidad entre nuestro producto mixto. Con lo cual en este producto hay que tener cuidado si se presentan muchas defunciones.
 
 ### b. Análisis por escenarios para el VPN y MU
 
@@ -463,11 +446,11 @@ Ahora plantearemos 5 escenarios para realizar el análisis.
 Los escenarios serán los siguientes:
 
 # Descripción detallada de los escenarios:
-1. Escenario 1 (Pesimista): Tasa de interés del 3% y tabla de mortalidad con alfa=4.
-2. Escenario 2 (Conservador): Tasa de interés del 5% y tabla de mortalidad con alfa=6.
-3. Escenario 3 (Estimado): Tasa de interés del 7.5% y tabla de mortalidad con alfa=8.
-4. Escenario 4 (Optimista): Tasa de interés del 10% y tabla de mortalidad con alfa=9.
-5.- Escenario 5 (Base): Tasa de interés del  5%  y tabla de mortalidad base con la que calculamos las reservas.
+
+1.  Escenario 1 (Pesimista): Tasa de interés del 3% y tabla de mortalidad con alfa=4.
+2.  Escenario 2 (Conservador): Tasa de interés del 5% y tabla de mortalidad con alfa=6.
+3.  Escenario 3 (Estimado): Tasa de interés del 7.5% y tabla de mortalidad con alfa=8.
+4.  Escenario 4 (Optimista): Tasa de interés del 10% y tabla de mortalidad con alfa=9. 5.- Escenario 5 (Base): Tasa de interés del 5% y tabla de mortalidad base con la que calculamos las reservas.
 
 Los resultados de VPN y MU de los primeros 4 escenarios se muestran en la siguiente tabla:
 
@@ -605,17 +588,15 @@ kable(df_resumen, caption = "Promedio y desviación estándar de las 1000 realiz
 
 Es decir, si en general suponiendo que la mayoría de las tasas de intérés se encuentran en el rango de 6% a 9% y que la mayoría de las $\alpha$ se encuentran en el rango de 6.5 a 8.5, entonces podemos esperar que el VPN y la MU lleguen a ser rentables, aunque igual hay que estar muy pendientes ante bajas en la tasa de interés y muchas defunciones de las esperadas, porque se puede apreciar que el VPN y la MU son muy sensibles a estos cambios, y que hay riesgo de que no sea rentable el producto con una confianza del `r sum(df_resultados$MU<=0)/10`%.
 
-
 # Para una cartera de 100 asegurados: Fondo Total
-
 
 ## 1. Asset-share
 
-(Fórmula para el cálculo y valores obtenidos para toda la vigencia de la póliza) 
+(Fórmula para el cálculo y valores obtenidos para toda la vigencia de la póliza)
 
 Utilizaremos la fórmula recursiva para calcular el Asset-share, contando con los valores observados de tasa de interés, mortalidad promedio, costos asociados a la prima de emisión y renovación promedio, y por último los costos asociados a la liquidación por muerte promedio.
 
-$$\actsymb[k+1]{\mathit{AS}}{}=\frac{[\actsymb[k]{\mathit{AS}}{}+G_{k}(1-c_{k}^{o})-e_{k}^{o}](1+i_{k,k+1}^{o})-q_{x+k}^{o}(b_{k+1}(1+propb_{k}^{o})+E_{k+1}^{o}))}{p_{x+k}^{o}}$$
+$$\actsymb[k+1]{\mathit{AS}}{}=\frac{[\actsymb[k]{\mathit{AS}}{}+G_{k}-e_{k}^{o}](1+i_{k,k+1}^{o})-q_{x+k}^{o}(b_{k+1}+E_{k+1}^{o}))}{p_{x+k}^{o}}$$
 
 Con lo cual los valores de Asset-share para toda la vigencia de la póliza son los siguientes:
 
@@ -635,15 +616,13 @@ print(df)
 
 ```
 
-
-
 ## 2. Estimación del Fondo Total mediante el Asset-share
 
 (Fórmula para el cálculo y valores obtenidos para toda la vigencia de la póliza)
 
 Utilizaremos la siguiente fórmula para calcular el Fondo Total, suponiendo que conocemos exactamente cúantos asegurados tenemos en cada año:
 
-$$\actsymb[k+1]{\mathit{AS}}{}=\frac{[\actsymb[k]{\mathit{AS}}{}+G_{k}(1-c_{k}^{o})-e_{k}^{o}](1+i_{k,k+1}^{o})-q_{x+k}^{o}(b_{k+1}(1+propb_{k}^{o})+E_{k+1}^{o}))}{p_{x+k}^{o}}$$
+$$\actsymb[k+1]{\mathit{AS}}{}=\frac{[\actsymb[k]{\mathit{AS}}{}+G_{k}-e_{k}^{o}](1+i_{k,k+1}^{o})-q_{x+k}^{o}(b_{k+1}+E_{k+1}^{o}))}{p_{x+k}^{o}}$$
 
 $$\actsymb[k]{\mathit{FT}}{}=\lx{x+k}[o] \actsymb[k]{\mathit{AS}}{}$$
 
@@ -660,7 +639,7 @@ lx[1] <- 100  # o el valor base que elijas
 
 # Calcula los valores lx utilizando la relación con qx
 for(i in 2:(length(lx))) {
-  lx[i] <- lx[i-1] - tabla_mortalidad$dx[i-1]
+  lx[i] <- lx[i-1] - funcMortalidad2(i-2)*lx[i-1]
 }
 
 # Almacenar los valores lx en un dataframe
@@ -682,16 +661,16 @@ print(df)
 
 Calcularemos el fondo total de lo que estimamos que tenemos como si calcularamos el Asset-Share con lo que ocurrió realmente en cuanto a muertes, utilizamos los demás supuestos promedios observados, y además siempre topamos o completamos el Asset-Share con el valor que debemos tener de la póliza recargada.
 
-$$\actsymb[k+1]{\mathit{AS}^{*}}{}=\frac{[\actsymb[k]{\mathit{AS}^{*}}{}+G_{k}(1-c_{k}^{o})-e_{k}^{o}](1+i_{k,k+1}^{o})-q_{x+k}^{o}(b_{k+1}(1+propb_{k}^{o})+E_{k+1}^{o}))}{p_{x+k}^{o}}$$
-$$\actsymb[k]{\mathit{FT}}{}=\lx{x+k}[o] \actsymb[k]{\mathit{AS}^{*}}{}$$
+$$\actsymb[k+1]{\mathit{AS}^{*}}{}=\frac{[\actsymb[k]{\mathit{AS}^{*}}{}+G_{k}-e_{k}^{o}](1+i_{k,k+1}^{o})-q_{x+k}^{o}(b_{k+1}+E_{k+1}^{o}))}{p_{x+k}^{o}}$$ $$\actsymb[k]{\mathit{FT}}{}=\lx{x+k}[o] \actsymb[k]{\mathit{AS}^{*}}{}$$
 
-Una vez que tenemos el valor del fondo total, calculamos las utilidades como la diferencia entre el fondo total y el valor de la póliza recargada en los mismos tiempos k; y al final lo diviremos entre 100 para tener un valor comparativvo per cápita.
 
-$$U_{k}=(\actsymb[k]{\mathit{FT}}{}-\Vx[k]{`r xEdad`: \angl{`r n`}})/100$$
+Una vez que tenemos el valor del fondo total, calculamos las utilidades como la diferencia entre el fondo total y el valor de la póliza recargada en los mismos tiempos k; y al final lo diviremos entre 100 para tener un valor comparativo per cápita.
+
+$$U_{k}=(\actsymb[k]{\mathit{FT}}{}-\lx{x+k}[o] \Vx[k]{`r xEdad`: \angl{`r n`}})/100$$
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 # Calcular los valores
-kTemp_valores <- 0:19
+kTemp_valores <- 0:n
 assetShare_valores <- sapply(kTemp_valores, function(k) assetShare2(k, funcInteres, funcPrimaCostos, funcMuerteCostos, funcMortalidad2, primaRecargada))
 
 
@@ -716,6 +695,8 @@ Es decir, nuestro producto parece no ser rentable la mayor parte del tiempo. Por
 
 (Fórmula para el cálculo y valor obtenido)
 
+Lo obtenemos como nuestra medida mencionada anteriormente, pero ahora con los valores de utilidades obtenidos en la sección anterior en lugar de utilizar los flujos completos obtenidos en el stress testing.
+
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 medidaVPNFT <- function(rCC=.16){
    #ktemo solo está entre 1 a n
@@ -734,35 +715,20 @@ Con lo cual la medida de rentabilidad de VPN para este producto dado lo observad
 
 (Fórmula para el cálculo y valor obtenido)
 
+Usamos la misma fórmula mencionada anteriormente pero con la medida de VPN modificada como se mencionó antes.
+
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 # Cuidado con kTemp, está trasladado
 medidaMUFT <- function(rCC=.16){
-  v <- 1/(1+rCC)
-  resultado <- 0
-  for (kTemp in seq(1,mPrimas,1)){
-    resultado <- resultado + primaRecargada*v^(kTemp-1)
-  }
+  resultado <- primaRecargada*anualidad(xEdad, mPrimas, rCC)
   return(medidaVPNFT()/resultado)
 }
 ```
 
 Con lo cual la medida de rentabilidad de MU para este producto dado lo observado es de `r medidaMUFT()`.
 
-En conclusión, el producto no fue rentable, ya que la medida de rentabilidad de MU fue negativa. Esto se debió principalmente a la mayor cantidad de defunciones que no se esperaban. Y como se advirtió en el análisis de stress-testing, el producto es muy sensible a las defunciones y había que tenerse cuidado porque había cierto riesgo probable de que no fuera rentable. 
+En conclusión, el producto fue rentable, ya que la medida de rentabilidad de MU no fue negativa. Esto se debió a que hubo mayores tasas de interés de las esperadas que lograron subsidiar el incremento en las defunciones.
 
-Solo para ilustrar este efecto mostraremos el cambio de la mortalidad con la siguiente gráfica, el cual es lineal y terminó de desarrollar más pérdidas que utilidades:
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE}
-
-# Crear gráfica
-ggplot(data = tabla_mortalidad, aes(x = x, y = lx)) +
-  geom_line() + 
-  labs(title = "Función de supervivencia lx", 
-       x = "Edad x", 
-       y = "Número de supervivientes lx") + 
-  theme_minimal()
-
-```
 
 # Referencias
 
@@ -770,4 +736,7 @@ Sánchez, Marcelino, (2023). Notas de la clase de modelos actuariales con la pro
 
 Código en R del documento:
 
-Sánchez, Marcelino, (2023). modelos.Actuariales_examen_1. GitHub. https://github.com/Marce2021M/modelos.Actuariales_examen_1
+Sánchez, Marcelino, (2023). modelos.Actuariales_examen_1. GitHub. 
+
+
+https://github.com/Marce2021M/modelos.Actuariales_examen_1

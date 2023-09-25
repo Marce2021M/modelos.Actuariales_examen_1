@@ -200,11 +200,7 @@ medidaVPN <- function(rCC=.16, iTasa=iTasaEstimada, tabla_Mortalidad=tablaMortal
 }
 
 medidaMU <- function(rCC=.16, iTasa=iTasaEstimada, tabla_Mortalidad=tablaMortalidadEstimada){
-  v <- 1/(1+rCC)
-  resultado <- 0
-  for (kTemp in seq(1,mPrimas,1)){
-    resultado <- resultado + primaRecargada*v^(kTemp-1)
-  }
+  resultado <- primaRecargada*anualidad(xEdad, mPrimas,rCC)
   return(medidaVPN(rCC, iTasaEstimada, tablaMortalidadEstimada)/(resultado*100))
 }
 
@@ -219,11 +215,11 @@ funcInteres <- function(kTemp){
 }
 primaPropCostos <- function(kTemp, prima){
   if(kTemp==0){
-    resultado <- .6*prima
+    resultado <- prima
   } else if(kTemp %in% c(1,2)){
-    resultado <- .8*prima}
+    resultado <- prima}
   else if(kTemp>=3 && kTemp<=mPrimas-1){
-    resultado <- .95*prima
+    resultado <- prima
   } else {
     resultado <- 0
   }
@@ -242,7 +238,7 @@ propLiquidacion <- function(kTemp){
   #kTemp es >=1
   #Se da vencidamente
   if(kTemp>=1 && kTemp<=n){
-    resultado <- resultado <- 1.003*saMuerte
+    resultado <- resultado <- saMuerte
   } else {
     resultado <- 0
   }
@@ -289,10 +285,10 @@ lx <- numeric(max(valoresObservados_carteraObservados$'K(x)') + 1)
 lx[1] <- l_0
 
 # Calcular dx y lx
-for (k in 0:max(valoresObservados_carteraObservados$'K(x)')) {
+for (k in 0:(max(valoresObservados_carteraObservados$'K(x)')-1)) {
   dx <- sum(valoresObservados_carteraObservados$'K(x)' == k)
-  if (k > 0) {
-    lx[k+1] <- lx[k] - dx
+  if (k >= 0) {
+    lx[k+2] <- lx[k+1] - dx
   }
 }
 
